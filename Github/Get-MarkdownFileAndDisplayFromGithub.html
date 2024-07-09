@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display Markdown from GitHub</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <form id="urlForm">
+        <label for="urlInput">GitHub Markdown File URL:</label>
+        <input type="text" id="urlInput" placeholder="Enter GitHub URL" required>
+        <button type="submit">Fetch and Display</button>
+    </form>
+    <div id="content"></div>
+
+    <script>
+        document.getElementById('urlForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the form from submitting the traditional way
+
+            const urlInput = document.getElementById('urlInput').value;
+            console.log('Input URL:', urlInput); // Log the input URL
+
+            // Validate and process the GitHub URL
+            if (urlInput.startsWith('https://github.com/')) {
+                const apiUrl = convertGitHubUrlToApiUrl(urlInput);
+                console.log('API URL:', apiUrl); // Log the API URL
+
+                // Fetch the Markdown file from GitHub
+                fetch(apiUrl, {
+                    headers: {
+                        'Accept': 'application/vnd.github.v3.raw'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(markdown => {
+                    console.log('Fetched Markdown:', markdown); // Log the fetched Markdown
+                    // Convert the Markdown to HTML
+                    const htmlContent = marked.parse(markdown); // Use `marked.parse`
+                    // Insert the HTML into the content div
+                    document.getElementById('content').innerHTML = htmlContent;
+                })
+                .catch(error => console.error('Error fetching the Markdown file:', error));
+            } else {
+                alert('Please enter a valid GitHub URL.');
+            }
+        });
+
+        function convertGitHubUrlToApiUrl(githubUrl) {
+            // Convert the GitHub URL to GitHub API URL
+            // Example: https://github.com/username/repository/blob/main/path/to/file.md
+            // becomes: https://api.github.com/repos/username/repository/contents/path/to/file.md
+
+            const urlParts = githubUrl.split('/');
+            const username = urlParts[3];
+            const repository = urlParts[4];
+            const branch = urlParts[6];
+            const filePath = urlParts.slice(7).join('/');
+
+            return `https://api.github.com/repos/${username}/${repository}/contents/${filePath}?ref=${branch}`;
+        }
+    </script>
+</body>
+</html>

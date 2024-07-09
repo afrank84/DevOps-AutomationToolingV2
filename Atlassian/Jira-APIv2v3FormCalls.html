@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jira Cloud API Form</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Jira Cloud API Form</h1>
+        <form id="jiraForm">
+            <div class="mb-3">
+                <label for="credentialsFile" class="form-label">Upload Credentials File</label>
+                <input type="file" class="form-control" id="credentialsFile" accept=".txt" required>
+            </div>
+            <div class="mb-3">
+                <label for="apiCommand" class="form-label">API Command</label>
+                <select class="form-select" id="apiCommand" required>
+                    <option value="" selected disabled>Select an API command</option>
+                    <!-- Options will be populated dynamically -->
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            const apiJson = `{
+                "info": { ... },
+                "item": [
+                    { "name": "Announcement banner", "item": [ { "name": "Get announcement banner configuration", "request": { ... } }, { "name": "Update announcement banner configuration", "request": { ... } } ] },
+                    { "name": "App data policies", "item": [ { "name": "Get data policy for the workspace", "request": { ... } }, { "name": "Get data policy for projects", "request": { ... } } ] },
+                    ...
+                ]
+            }`;
+
+            const apiData = JSON.parse(apiJson);
+            const apiCommands = [];
+
+            apiData.item.forEach(category => {
+                category.item.forEach(command => {
+                    apiCommands.push({
+                        name: command.name,
+                        method: command.request.method,
+                        url: command.request.url
+                    });
+                });
+            });
+
+            apiCommands.forEach(command => {
+                $('#apiCommand').append(new Option(command.name, JSON.stringify(command)));
+            });
+
+            let username = '';
+            let apiToken = '';
+
+            $('#credentialsFile').change(function(event) {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const contents = e.target.result;
+                    const lines = contents.split('\n');
+                    username = lines[0].trim();
+                    apiToken = lines[1].trim();
+                };
+                reader.readAsText(file);
+            });
+
+            $('#jiraForm').submit(function(event) {
+                event.preventDefault();
+                const selectedCommand = JSON.parse($('#apiCommand').val());
+
+                // Perform API request using selectedCommand, username, and apiToken
+                // For demonstration, we'll just log the details
+                console.log('Username:', username);
+                console.log('API Token:', apiToken);
+                console.log('Selected Command:', selectedCommand);
+
+                // You can use fetch or ajax to make the API request here
+                // Example with fetch:
+                // fetch(selectedCommand.url, {
+                //     method: selectedCommand.method,
+                //     headers: {
+                //         'Authorization': 'Basic ' + btoa(username + ':' + apiToken),
+                //         'Content-Type': 'application/json'
+                //     }
+                // }).then(response => response.json()).then(data => console.log(data));
+            });
+        });
+    </script>
+</body>
+</html>

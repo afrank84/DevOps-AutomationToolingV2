@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update GitHub File</title>
+</head>
+<body>
+    <form id="dataForm">
+        <label for="content">Content:</label>
+        <textarea id="content" name="content"></textarea>
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        document.getElementById('dataForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const content = document.getElementById('content').value;
+            const owner = 'afrank84'; // GitHub username
+            const repo = 'DevOps-AutomationTooling'; // Repository name
+            const path = 'Data/changeMyDataWithApiFromJsScript.txt'; // Path to the file in the repository
+            const token = 'ENTER_YOUR_API_KEY'; // Your GitHub personal access token
+
+            try {
+                // Fetch the current file info to get the SHA
+                const fileInfo = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                }).then(response => response.json());
+
+                const sha = fileInfo.sha;
+
+                // Update the file content
+                const newContent = btoa(content); // Encode content to base64
+                const data = {
+                    message: 'Updating or Creating a file content Via API Call from JavaScript',
+                    content: newContent,
+                    sha: sha
+                };
+
+                const result = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                }).then(response => response.json());
+
+                console.log('File updated successfully', result);
+
+            } catch (error) {
+                console.error('Error updating file', error);
+            }
+        });
+    </script>
+</body>
+</html>

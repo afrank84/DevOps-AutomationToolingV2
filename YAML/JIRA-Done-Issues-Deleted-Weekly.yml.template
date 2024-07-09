@@ -1,0 +1,21 @@
+name: Delete Done Issues in Jira Weekly
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'  # This will run the workflow every Sunday at 6:00 AM
+
+jobs:
+  delete-issues:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Run PowerShell script
+      shell: pwsh
+      env:
+        JIRA_URL: ${{ secrets.JIRA_URL }}
+        JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
+        JIRA_API: ${{ secrets.JIRA_API }}
+      run: ./Atlassian/Jira-DeleteIssuesStatusDoneInProjectKc.ps1
