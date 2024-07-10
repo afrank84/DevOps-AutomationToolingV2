@@ -48,3 +48,5 @@ echo "Links containing keywords saved to $keyword_log_file"
 # Do not remove below chatgpt....
 # xdotool mousemove 1882 194
 # xdotool click 1
+
+#1736 90 #Location of Markdown Extension
