@@ -1,0 +1,27 @@
+# playwright-test.yaml
+name: Playwright Manual Test
+
+on:
+  workflow_dispatch:  # This allows manual triggering of the workflow
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Run Playwright tests
+      run: npx playwright test
