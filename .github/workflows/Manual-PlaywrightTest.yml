@@ -19,9 +19,26 @@ jobs:
       uses: actions/setup-node@v4  # Updated to v4
       with:
         node-version: ${{ matrix.node-version }}
-    
+
+    - name: Create package.json
+      run: |
+        echo '{
+          "name": "playwright-test",
+          "version": "1.0.0",
+          "description": "A test project for Playwright",
+          "main": "index.js",
+          "scripts": {
+            "test": "npx playwright test"
+          },
+          "author": "",
+          "license": "ISC",
+          "dependencies": {
+            "playwright": "^1.17.0"
+          }
+        }' > package.json
+
     - name: Install dependencies
       run: npm install
-    
+
     - name: Run Playwright tests
       uses: microsoft/playwright-github-action@v1.5.5
