@@ -1,0 +1,44 @@
+# playwright-test.yaml
+name: Playwright Manual Test
+
+on:
+  workflow_dispatch:  # This allows manual triggering of the workflow
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x]  # Use Node.js version 22.x
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4  # Updated to v4
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4  # Updated to v4
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Create package.json
+      run: |
+        echo '{
+          "name": "playwright-test",
+          "version": "1.0.0",
+          "description": "A test project for Playwright",
+          "main": "index.js",
+          "scripts": {
+            "test": "npx playwright test"
+          },
+          "author": "",
+          "license": "ISC",
+          "dependencies": {
+            "playwright": "^1.17.0"
+          }
+        }' > package.json
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run Playwright tests
+      uses: microsoft/playwright-github-action@v1.5.5
