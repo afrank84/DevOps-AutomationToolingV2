@@ -24,4 +24,4 @@ jobs:
       run: npm install
     
     - name: Run Playwright tests
-      run: npx playwright test
+      uses: microsoft/playwright-github-action@v1.5.5
