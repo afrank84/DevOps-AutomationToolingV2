@@ -9,14 +9,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20.x]  # Use the latest Node.js version
+        node-version: [22.x]  # Use Node.js version 22.x
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3  # Updated to v3
+      uses: actions/checkout@v4  # Updated to v4
 
     - name: Set up Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3  # Updated to v3
+      uses: actions/setup-node@v4  # Updated to v4
       with:
         node-version: ${{ matrix.node-version }}
     
