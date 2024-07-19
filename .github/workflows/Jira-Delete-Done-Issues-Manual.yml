@@ -17,4 +17,4 @@ jobs:
         JIRA_URL: ${{ secrets.JIRA_URL }}
         JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
         JIRA_API: ${{ secrets.JIRA_API }}
-      run: ./Atlassian/Jira-DeleteIssuesStatusDoneInProjectKc.ps1
+      run: ./Atlassian/Issues/Jira-DeleteIssuesStatusDoneInProjectKc.ps1
