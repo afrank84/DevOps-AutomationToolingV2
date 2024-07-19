@@ -1,7 +1,5 @@
-# Define variables
-$baseURL = "https://your-jira-instance.atlassian.net"
-$projectKey = "YOUR_PROJECT_KEY"
-$credentialsFile = "path\to\credentials.txt"  # Path to the credentials file
+# Path to the credentials file
+$credentialsFile = "path\to\credentials.txt"  # Update with the actual path to your credentials file
 
 # Function to read credentials from the file
 function Get-Credentials {
@@ -22,8 +20,12 @@ function Get-Credentials {
 
 # Read credentials
 $credentials = Get-Credentials -filePath $credentialsFile
+$baseURL = $credentials["baseURL"]
 $username = $credentials["username"]
 $apiToken = $credentials["apiToken"]
+
+# Prompt the user for the project key
+$projectKey = Read-Host -Prompt "Enter the Jira project key"
 
 # Base64 encode the username and API token for authorization
 $authInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("${username}:${apiToken}")))
