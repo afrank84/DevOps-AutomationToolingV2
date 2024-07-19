@@ -1,8 +1,29 @@
 # Define variables
 $baseURL = "https://your-jira-instance.atlassian.net"
 $projectKey = "YOUR_PROJECT_KEY"
-$username = "your-email@example.com"
-$apiToken = "your-api-token"
+$credentialsFile = "path\to\credentials.txt"  # Path to the credentials file
+
+# Function to read credentials from the file
+function Get-Credentials {
+    param (
+        [string]$filePath
+    )
+
+    $credentials = @{}
+    foreach ($line in Get-Content -Path $filePath) {
+        $parts = $line -split '='
+        if ($parts.Length -eq 2) {
+            $credentials[$parts[0]] = $parts[1]
+        }
+    }
+
+    return $credentials
+}
+
+# Read credentials
+$credentials = Get-Credentials -filePath $credentialsFile
+$username = $credentials["username"]
+$apiToken = $credentials["apiToken"]
 
 # Base64 encode the username and API token for authorization
 $authInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("${username}:${apiToken}")))
@@ -51,3 +72,6 @@ $attachments = List-Attachments -issues $issues
 
 # Display the attachment list
 $attachments | Format-Table -AutoSize
+
+# Optionally, export the attachment list to a CSV file
+# $attachments | Export-Csv -Path "JiraAttachments.csv" -NoTypeInformation
