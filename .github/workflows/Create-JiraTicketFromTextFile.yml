@@ -29,7 +29,7 @@ jobs:
           PROJECT_KEY: ${{ env.PROJECT_KEY }}
           SUMMARY: ${{ env.SUMMARY }}
         run: |
-          curl -X POST -H "Content-Type: application/json" \
+          response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST -H "Content-Type: application/json" \
             -u $JIRA_EMAIL:$JIRA_API_TOKEN \
             --data '{
               "fields": {
@@ -41,4 +41,9 @@ jobs:
                   "name": "Task"
                 }
               }
-            }' $JIRA_BASE_URL/rest/api/2/issue/
+            }' $JIRA_BASE_URL/rest/api/2/issue/)
+          echo "$response"
+          http_code=$(echo "$response" | grep "HTTP_CODE" | awk -F: '{print $2}')
+          if [ "$http_code" -ne 201 ]; then
+            exit 1
+          fi
