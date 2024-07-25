@@ -17,7 +17,7 @@ jobs:
         id: read_ticket_info
         run: |
           PROJECT_KEY=$(grep "Project Key:" Data/jiraTicketExample.txt | awk -F': ' '{print $2}')
-          SUMMARY=$(grep "Summary:" jira_ticket.txt | awk -F': ' '{print $2}')
+          SUMMARY=$(grep "Summary:" Data/jiraTicketExample.txt | awk -F': ' '{print $2}')
           echo "PROJECT_KEY=$PROJECT_KEY" >> $GITHUB_ENV
           echo "SUMMARY=$SUMMARY" >> $GITHUB_ENV
 
