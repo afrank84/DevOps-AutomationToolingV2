@@ -4,8 +4,13 @@ import ta
 import matplotlib.pyplot as plt
 import mplfinance as mpf
 from matplotlib.dates import DateFormatter
+from datetime import datetime
 
-def analyze_stock(stock_symbol, start_date, end_date):
+def analyze_stock(stock_symbol, start_date, end_date=None):
+    # Set end date to today's date if not provided
+    if end_date is None:
+        end_date = datetime.today().strftime('%Y-%m-%d')
+    
     # Download stock data from Yahoo Finance
     data = yf.download(stock_symbol, start=start_date, end=end_date, interval="1mo")
     
@@ -41,11 +46,21 @@ def analyze_stock(stock_symbol, start_date, end_date):
     ma20_upward = data['MA20_upward'].iloc[-2:].all() if len(data) > 1 else False
 
     # Check if close price is close to 20 MA or between 20 MA and 50 MA
-    data['Close_to_MA20'] = abs(data['Close'] - data['MA20']) < (data['Close'] * 0.01)  # within 1% of MA20
+    # Updated to use 10% instead of 1% for determining closeness
+    data['Close_to_MA20'] = abs(data['Close'] - data['MA20']) < (data['Close'] * 0.10)  # within 10% of MA20
     data['Between_MA20_MA50'] = (data['Close'] > data['MA20']) & (data['Close'] < data['MA50'])
 
     close_to_ma20 = data['Close_to_MA20'].iloc[-1] if not data['Close_to_MA20'].empty else False
     between_ma20_ma50 = data['Between_MA20_MA50'].iloc[-1] if not data['Between_MA20_MA50'].empty else False
+
+    # Calculate buy signal prices
+    data['Buy_Above_MA20'] = data['MA20'] * 1.10  # 10% above MA20
+    data['Buy_On_MA20'] = data['MA20']             # On MA20
+    data['Buy_Below_MA20'] = data['MA20'] * 0.90  # 10% below MA20
+
+    buy_above_ma20 = data['Buy_Above_MA20'].iloc[-1]
+    buy_on_ma20 = data['Buy_On_MA20'].iloc[-1]
+    buy_below_ma20 = data['Buy_Below_MA20'].iloc[-1]
 
     # Print results
     analysis_info = (f"Total Green Candlesticks: {green_count}\n"
@@ -54,13 +69,19 @@ def analyze_stock(stock_symbol, start_date, end_date):
                      f"Longest Red Streak: {max_red_streak}\n"
                      f"20 MA is moving upward: {ma20_upward}\n"
                      f"Close price is close to 20 MA: {close_to_ma20}\n"
-                     f"Close price is between 20 MA and 50 MA: {between_ma20_ma50}")
+                     f"Close price is between 20 MA and 50 MA: {between_ma20_ma50}\n"
+                     f"Buy 10% above MA20: {buy_above_ma20:.2f}\n"
+                     f"Buy on MA20: {buy_on_ma20:.2f}\n"
+                     f"Buy 10% below MA20: {buy_below_ma20:.2f}")
     print(analysis_info)
 
     # Plotting the chart
     apds = [mpf.make_addplot(data['MA20'], color='blue', linestyle='--'),
             mpf.make_addplot(data['MA50'], color='orange', linestyle='--'),
-            mpf.make_addplot(data['MA200'], color='red', linestyle='--')]
+            mpf.make_addplot(data['MA200'], color='red', linestyle='--'),
+            mpf.make_addplot(data['Buy_Above_MA20'], color='green', linestyle=':'),
+            mpf.make_addplot(data['Buy_On_MA20'], color='blue', linestyle=':'),
+            mpf.make_addplot(data['Buy_Below_MA20'], color='red', linestyle=':')]
 
     fig, axlist = mpf.plot(data, type='candle', style='charles', addplot=apds, returnfig=True, volume=False)
     
@@ -78,4 +99,4 @@ def analyze_stock(stock_symbol, start_date, end_date):
     plt.show()
 
 # Example usage
-analyze_stock('AMD', '2020-01-01', '2023-12-31')
+analyze_stock('AMD', '2020-01-01')
