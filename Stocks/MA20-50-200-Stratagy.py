@@ -61,6 +61,14 @@ def analyze_stock(stock_symbol, start_date, end_date=None):
     buy_on_ma20 = data['Buy_On_MA20'].iloc[-1]
     buy_below_ma20 = data['Buy_Below_MA20'].iloc[-1]
 
+    # Calculate the highest high in the given period
+    highest_high = data['High'].max()
+
+    # Calculate potential profits
+    profit_above_ma20 = highest_high - buy_above_ma20
+    profit_on_ma20 = highest_high - buy_on_ma20
+    profit_below_ma20 = highest_high - buy_below_ma20
+
     # Print results
     analysis_info = (f"Total Green Candlesticks: {green_count}\n"
                      f"Total Red Candlesticks: {red_count}\n"
@@ -71,7 +79,11 @@ def analyze_stock(stock_symbol, start_date, end_date=None):
                      f"Close price is between 20 MA and 50 MA: {between_ma20_ma50}\n"
                      f"Buy 10% above MA20: {buy_above_ma20:.2f}\n"
                      f"Buy on MA20: {buy_on_ma20:.2f}\n"
-                     f"Buy 10% below MA20: {buy_below_ma20:.2f}")
+                     f"Buy 10% below MA20: {buy_below_ma20:.2f}\n"
+                     f"Highest High in Period: {highest_high:.2f}\n"
+                     f"Potential Profit 10% Above MA20: {profit_above_ma20:.2f}\n"
+                     f"Potential Profit On MA20: {profit_on_ma20:.2f}\n"
+                     f"Potential Profit 10% Below MA20: {profit_below_ma20:.2f}")
     print(analysis_info)
 
     # Plotting the chart
@@ -81,10 +93,11 @@ def analyze_stock(stock_symbol, start_date, end_date=None):
 
     fig, axlist = mpf.plot(data, type='candle', style='charles', addplot=apds, returnfig=True, volume=False)
     
-    # Add horizontal lines for buy levels
+    # Add horizontal lines for buy levels and the highest high
     axlist[0].axhline(y=buy_above_ma20, color='green', linestyle=':', label='Buy 10% Above MA20')
     axlist[0].axhline(y=buy_on_ma20, color='blue', linestyle=':', label='Buy On MA20')
     axlist[0].axhline(y=buy_below_ma20, color='red', linestyle=':', label='Buy 10% Below MA20')
+    axlist[0].axhline(y=highest_high, color='purple', linestyle='-', label='Highest High in Period')
     
     # Display analysis info on chart
     plt.figtext(0.14, 0.01, analysis_info, horizontalalignment='left', fontsize=10)
