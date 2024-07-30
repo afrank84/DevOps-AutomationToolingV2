@@ -1,6 +1,5 @@
 import pandas as pd
 import yfinance as yf
-import ta
 import matplotlib.pyplot as plt
 import mplfinance as mpf
 from matplotlib.dates import DateFormatter
@@ -78,12 +77,14 @@ def analyze_stock(stock_symbol, start_date, end_date=None):
     # Plotting the chart
     apds = [mpf.make_addplot(data['MA20'], color='blue', linestyle='--', label='MA20'),
             mpf.make_addplot(data['MA50'], color='orange', linestyle='--', label='MA50'),
-            mpf.make_addplot(data['MA200'], color='red', linestyle='--', label='MA200'),
-            mpf.make_addplot(data['Buy_Above_MA20'], color='green', linestyle=':', label='Buy 10% Above MA20'),
-            mpf.make_addplot(data['Buy_On_MA20'], color='blue', linestyle=':', label='Buy On MA20'),
-            mpf.make_addplot(data['Buy_Below_MA20'], color='red', linestyle=':', label='Buy 10% Below MA20')]
+            mpf.make_addplot(data['MA200'], color='red', linestyle='--', label='MA200')]
 
     fig, axlist = mpf.plot(data, type='candle', style='charles', addplot=apds, returnfig=True, volume=False)
+    
+    # Add horizontal lines for buy levels
+    axlist[0].axhline(y=buy_above_ma20, color='green', linestyle=':', label='Buy 10% Above MA20')
+    axlist[0].axhline(y=buy_on_ma20, color='blue', linestyle=':', label='Buy On MA20')
+    axlist[0].axhline(y=buy_below_ma20, color='red', linestyle=':', label='Buy 10% Below MA20')
     
     # Display analysis info on chart
     plt.figtext(0.14, 0.01, analysis_info, horizontalalignment='left', fontsize=10)
