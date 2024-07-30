@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analysis</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #chart {
+            width: 100%;
+            height: 500px;
+        }
+        .axis path, .axis line {
+            fill: none;
+            shape-rendering: crispEdges;
+        }
+        .candlestick {
+            stroke: black;
+        }
+        .candlestick.green {
+            fill: green;
+        }
+        .candlestick.red {
+            fill: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Stock Analysis</h1>
+    <div id="chart"></div>
+    <pre id="analysis-info"></pre>
+    <script>
+        // API key for Alpha Vantage
+        const apiKey = 'YOUR_ALPHA_VANTAGE_API_KEY';
+        const stockSymbol = 'AMD';
+        const startDate = '2020-01-01';
+        const endDate = new Date().toISOString().split('T')[0]; // today's date
+
+        async function fetchStockData(symbol, start, end) {
+            const url = `https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol=${symbol}&apikey=${apiKey}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            return data['Monthly Time Series'];
+        }
+
+        function analyzeStock(stockData) {
+            const parseDate = d3.timeParse("%Y-%m-%d");
+            const data = Object.entries(stockData).map(([date, values]) => ({
+                date: parseDate(date),
+                open: +values['1. open'],
+                high: +values['2. high'],
+                low: +values['3. low'],
+                close: +values['4. close'],
+                volume: +values['5. volume']
+            })).reverse();
+
+            // Calculate moving averages
+            const ma20 = movingAverage(data, 20);
+            const ma50 = movingAverage(data, 50);
+            const ma200 = movingAverage(data, 200);
+
+            // Identify green and red candlesticks
+            data.forEach(d => {
+                d.green = d.close > d.open;
+                d.red = d.open > d.close;
+            });
+
+            // Calculate buy levels
+            const lastMA20 = ma20[ma20.length - 1].value;
+            const buyAboveMA20 = lastMA20 * 1.10;
+            const buyOnMA20 = lastMA20;
+            const buyBelowMA20 = lastMA20 * 0.90;
+
+            // Calculate highest high
+            const highestHigh = d3.max(data, d => d.high);
+
+            // Calculate potential profits
+            const profitAboveMA20 = highestHigh - buyAboveMA20;
+            const profitOnMA20 = highestHigh - buyOnMA20;
+            const profitBelowMA20 = highestHigh - buyBelowMA20;
+
+            const analysisInfo = `
+                Total Green Candlesticks: ${data.filter(d => d.green).length}
+                Total Red Candlesticks: ${data.filter(d => d.red).length}
+                20 MA is moving upward: ${lastMA20 > ma20[ma20.length - 2].value}
+                Close price is close to 20 MA: ${Math.abs(data[data.length - 1].close - lastMA20) < (data[data.length - 1].close * 0.10)}
+                Close price is between 20 MA and 50 MA: ${data[data.length - 1].close > lastMA20 && data[data.length - 1].close < ma50[ma50.length - 1].value}
+                Buy 10% above MA20: ${buyAboveMA20.toFixed(2)}
+                Buy on MA20: ${buyOnMA20.toFixed(2)}
+                Buy 10% below MA20: ${buyBelowMA20.toFixed(2)}
+                Highest High in Period: ${highestHigh.toFixed(2)}
+                Potential Profit 10% Above MA20: ${profitAboveMA20.toFixed(2)}
+                Potential Profit On MA20: ${profitOnMA20.toFixed(2)}
+                Potential Profit 10% Below MA20: ${profitBelowMA20.toFixed(2)}
+            `;
+
+            document.getElementById('analysis-info').innerText = analysisInfo;
+
+            drawChart(data, ma20, ma50, ma200, buyAboveMA20, buyOnMA20, buyBelowMA20, highestHigh);
+        }
+
+        function movingAverage(data, windowSize) {
+            return data.map((row, index, total) => {
+                const start = Math.max(0, index - windowSize + 1);
+                const subset = total.slice(start, index + 1);
+                const sum = subset.reduce((a, b) => a + b.close, 0);
+                return { date: row.date, value: sum / subset.length };
+            });
+        }
+
+        function drawChart(data, ma20, ma50, ma200, buyAboveMA20, buyOnMA20, buyBelowMA20, highestHigh) {
+            const margin = { top: 20, right: 20, bottom: 30, left: 50 };
+            const width = 960 - margin.left - margin.right;
+            const height = 500 - margin.top - margin.bottom;
+
+            const x = d3.scaleTime().range([0, width]);
+            const y = d3.scaleLinear().range([height, 0]);
+
+            const xAxis = d3.axisBottom(x);
+            const yAxis = d3.axisLeft(y);
+
+            const svg = d3.select("#chart").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            x.domain(d3.extent(data, d => d.date));
+            y.domain([d3.min(data, d => d.low), d3.max(data, d => d.high)]);
+
+            const candleWidth = (width / data.length) * 0.7;
+
+            svg.selectAll(".candlestick")
+                .data(data)
+                .enter().append("rect")
+                .attr("class", d => `candlestick ${d.green ? "green" : "red"}`)
+                .attr("x", d => x(d.date) - candleWidth / 2)
+                .attr("y", d => y(Math.max(d.open, d.close)))
+                .attr("width", candleWidth)
+                .attr("height", d => Math.abs(y(d.open) - y(d.close)));
+
+            svg.selectAll(".stem")
+                .data(data)
+                .enter().append("line")
+                .attr("class", "stem")
+                .attr("x1", d => x(d.date))
+                .attr("x2", d => x(d.date))
+                .attr("y1", d => y(d.high))
+                .attr("y2", d => y(d.low));
+
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(xAxis);
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis);
+
+            // Add MA20, MA50, MA200 lines
+            addLine(svg, ma20, x, y, "blue", "--", "MA20");
+            addLine(svg, ma50, x, y, "orange", "--", "MA50");
+            addLine(svg, ma200, x, y, "red", "--", "MA200");
+
+            // Add buy levels and highest high
+            addHorizontalLine(svg, buyAboveMA20, width, y, "green", ":", "Buy 10% Above MA20");
+            addHorizontalLine(svg, buyOnMA20, width, y, "blue", ":", "Buy On MA20");
+            addHorizontalLine(svg, buyBelowMA20, width, y, "red", ":", "Buy 10% Below MA20");
+            addHorizontalLine(svg, highestHigh, width, y, "purple", "-", "Highest High in Period");
+        }
+
+        function addLine(svg, data, x, y, color, style, label) {
+            const line = d3.line()
+                .x(d => x(d.date))
+                .y(d => y(d.value));
+
+            svg.append("path")
+                .datum(data)
+                .attr("class", "line")
+                .attr("d", line)
+                .style("stroke", color)
+                .style("stroke-dasharray", style === "--" ? "5,5" : "1,0")
+                .style("fill", "none");
+
+            svg.append("text")
+                .attr("transform", `translate(${x(data[data.length - 1].date)},${y(data[data.length - 1].value)})`)
+                .attr("dy", ".35em")
+                .attr("text-anchor", "end")
+                .text(label);
+        }
+
+        function addHorizontalLine(svg, value, width, y, color, style, label) {
+            svg.append("line")
+                .attr("x1", 0)
+                .attr("x2", width)
+                .attr("y1", y(value))
+                .attr("y2", y(value))
+                .style("stroke", color)
+                .style("stroke-dasharray", style === ":" ? "2,2" : "1,0");
+
+            svg.append("text")
+                .attr("transform", `translate(${width},${y(value)})`)
+                .attr("dy", ".35em")
+                .attr("text-anchor", "end")
+                .style("fill", color)
+                .text(label);
+        }
+
+        // Fetch and analyze stock data
+        fetchStockData(stockSymbol, startDate, endDate).then(analyzeStock);
+    </script>
+</body>
+</html>
