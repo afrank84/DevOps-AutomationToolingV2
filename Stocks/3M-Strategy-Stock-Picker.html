@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Price Checker with Interactive Candlestick Chart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial/dist/chartjs-chart-financial.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1>Stock Price Checker with Interactive Candlestick Chart</h1>
+        <form id="stockForm" class="mb-4">
+            <div class="mb-3">
+                <label for="stockSymbol" class="form-label">Enter Stock Symbol</label>
+                <input type="text" class="form-control" id="stockSymbol" placeholder="e.g., AAPL">
+            </div>
+            <button type="submit" class="btn btn-primary">Get Stock Data</button>
+        </form>
+
+        <div class="row mb-4">
+            <div class="col">
+                <label for="type">Chart Type</label>
+                <select id="type" class="form-select">
+                    <option value="candlestick" selected>Candlestick</option>
+                    <option value="ohlc">OHLC</option>
+                </select>
+            </div>
+            <div class="col">
+                <label for="scale-type">Scale Type</label>
+                <select id="scale-type" class="form-select">
+                    <option value="linear" selected>Linear</option>
+                    <option value="logarithmic">Logarithmic</option>
+                </select>
+            </div>
+            <div class="col">
+                <label for="color-scheme">Color Scheme</label>
+                <select id="color-scheme" class="form-select">
+                    <option value="muted" selected>Muted</option>
+                    <option value="neon">Neon</option>
+                </select>
+            </div>
+            <div class="col">
+                <label for="border">Border</label>
+                <select id="border" class="form-select">
+                    <option value="true" selected>Yes</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+            <div class="col">
+                <label for="mixed">Mixed Charts</label>
+                <select id="mixed" class="form-select">
+                    <option value="false" selected>No</option>
+                    <option value="true">Yes</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="stockPrice" class="mt-4"></div>
+        <ul id="todayPrice" class="list-unstyled mt-4"></ul>
+        <div class="conatiner">
+            <canvas id="chart" class="mt-5"></canvas>
+        </div>
+        <button id="randomizeData" class="btn btn-secondary mt-4">Randomize Data</button>
+    </div>
+
+    <script type="text/javascript">
+        var barCount = 60;
+        var initialDateStr = new Date().toUTCString();
+
+        var ctx = document.getElementById('chart').getContext('2d');
+        ctx.canvas.width = 1000;
+        ctx.canvas.height = 250;
+
+        var barData = new Array(barCount);
+        var lineData = new Array(barCount);
+
+        getRandomData(initialDateStr);
+
+        var chart = new Chart(ctx, {
+            type: 'candlestick',
+            data: {
+                datasets: [{
+                    label: 'CHRT - Chart.js Corporation',
+                    data: barData,
+                }, {
+                    label: 'Close price',
+                    type: 'line',
+                    data: lineData,
+                    hidden: true,
+                }]
+            }
+        });
+
+        function randomNumber(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        function randomBar(target, index, date, lastClose) {
+            var open = +randomNumber(lastClose * 0.95, lastClose * 1.05).toFixed(2);
+            var close = +randomNumber(open * 0.95, open * 1.05).toFixed(2);
+            var high = +randomNumber(Math.max(open, close), Math.max(open, close) * 1.1).toFixed(2);
+            var low = +randomNumber(Math.min(open, close) * 0.9, Math.min(open, close)).toFixed(2);
+
+            if (!target[index]) {
+                target[index] = {};
+            }
+
+            Object.assign(target[index], {
+                x: date.valueOf(),
+                o: open,
+                h: high,
+                l: low,
+                c: close
+            });
+
+        }
+
+        function getRandomData(dateStr) {
+            var date = luxon.DateTime.fromRFC2822(dateStr);
+
+            for (let i = 0; i < barData.length;) {
+                date = date.plus({ days: 1 });
+                if (date.weekday <= 5) {
+                    randomBar(barData, i, date, i === 0 ? 30 : barData[i - 1].c);
+                    lineData[i] = { x: barData[i].x, y: barData[i].c };
+                    i++;
+                }
+            }
+        }
+
+        var update = function () {
+            var dataset = chart.config.data.datasets[0];
+
+            // candlestick vs ohlc
+            var type = document.getElementById('type').value;
+            chart.config.type = type;
+
+            // linear vs log
+            var scaleType = document.getElementById('scale-type').value;
+            chart.config.options.scales.y.type = scaleType;
+
+            // color
+            var colorScheme = document.getElementById('color-scheme').value;
+            if (colorScheme === 'neon') {
+                chart.config.data.datasets[0].backgroundColors = {
+                    up: '#01ff01',
+                    down: '#fe0000',
+                    unchanged: '#999',
+                };
+            } else {
+                delete chart.config.data.datasets[0].backgroundColors;
+            }
+
+            // border
+            var border = document.getElementById('border').value;
+            if (border === 'false') {
+                dataset.borderColors = 'rgba(0, 0, 0, 0)';
+            } else {
+                delete dataset.borderColors;
+            }
+
+            // mixed charts
+            var mixed = document.getElementById('mixed').value;
+            if (mixed === 'true') {
+                chart.config.data.datasets[1].hidden = false;
+            } else {
+                chart.config.data.datasets[1].hidden = true;
+            }
+
+            chart.update();
+        };
+
+        [...document.getElementsByTagName('select')].forEach(element => element.addEventListener('change', update));
+
+        document.getElementById('randomizeData').addEventListener('click', function () {
+            getRandomData(initialDateStr, barData);
+            update();
+        });
+
+        document.getElementById('stockForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const apiKey = 'API_KEY_HERE_APLHA_VANTAGE';
+            const symbol = document.getElementById('stockSymbol').value;
+            const monthlyApiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol=${symbol}&apikey=${apiKey}`;
+            const globalQuoteApiUrl = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`;
+
+            // Fetch monthly data
+            fetch(monthlyApiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(monthlyData => {
+                    if (!monthlyData['Monthly Time Series']) {
+                        throw new Error('Invalid data format received from API.');
+                    }
+
+                    const timeSeries = monthlyData['Monthly Time Series'];
+                    const candlestickData = [];
+
+                    for (const date in timeSeries) {
+                        const timestamp = new Date(date).getTime();
+
+                        candlestickData.push({
+                            x: timestamp,
+                            o: parseFloat(timeSeries[date]['1. open']),
+                            h: parseFloat(timeSeries[date]['2. high']),
+                            l: parseFloat(timeSeries[date]['3. low']),
+                            c: parseFloat(timeSeries[date]['4. close'])
+                        });
+                    }
+
+                    candlestickData.sort((a, b) => a.x - b.x);
+
+                    // Filter data for the last 10 years
+                    const tenYearsAgo = Date.now() - 10 * 365 * 24 * 60 * 60 * 1000;
+                    const filteredData = candlestickData.filter(d => d.x >= tenYearsAgo);
+
+                    // Update the chart with the historical data
+                    chart.config.data.datasets[0].data = filteredData;
+                    chart.config.data.datasets[1].data = filteredData.map(d => ({ x: d.x, y: d.c }));
+                    chart.update();
+
+                    // Fetch current stock price
+                    return fetch(globalQuoteApiUrl);
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const stockData = data['Global Quote'];
+                    const price = stockData['05. price'];
+
+                    if (price) {
+                        document.getElementById('todayPrice').innerHTML = `
+                            <li>Current Price: $${price}</li>
+                            <li>Open: ${stockData['02. open']}</li>
+                            <li>High: ${stockData['03. high']}</li>
+                            <li>Low: ${stockData['04. low']}</li>
+                            <li>Previous Close: ${stockData['08. previous close']}</li>
+                            <li>Latest Trading Day: ${stockData['07. latest trading day']}</li>
+                        `;
+                    } else {
+                        document.getElementById('todayPrice').innerHTML = `<li>Could not retrieve current price for symbol: ${symbol}</li>`;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('stockPrice').innerHTML = `<h2>Error fetching data: ${error.message}</h2>`;
+                    console.error('Error fetching data:', error);
+                });
+        });
+
+
+
+    </script>
+</body>
+
+</html>
