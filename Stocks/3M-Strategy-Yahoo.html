@@ -33,6 +33,15 @@
             </ul>
         </div>
 
+        <div id="movingAverages" class="mt-4">
+            <h3>Moving Averages</h3>
+            <ul>
+                <li>Latest 20MA: <span id="ma20">0</span></li>
+                <li>Latest 50MA: <span id="ma50">0</span></li>
+                <li>Latest 200MA: <span id="ma200">0</span></li>
+            </ul>
+        </div>
+
         <div id="stockPrice" class="mt-4"></div>
         <ul id="todayPrice" class="list-unstyled mt-4"></ul>
         <div class="container">
@@ -71,8 +80,26 @@
             document.getElementById('redCount').textContent = redCount;
         }
 
+        function calculateMovingAverage(data, period) {
+            let movingAverages = [];
+            for (let i = 0; i <= data.length - period; i++) {
+                let sum = 0;
+                for (let j = 0; j < period; j++) {
+                    sum += data[i + j].c;
+                }
+                movingAverages.push(sum / period);
+            }
+            return movingAverages;
+        }
+
+        function updateMovingAverages(ma20, ma50, ma200) {
+            document.getElementById('ma20').textContent = ma20.length ? ma20[ma20.length - 1].toFixed(2) : 'N/A';
+            document.getElementById('ma50').textContent = ma50.length ? ma50[ma50.length - 1].toFixed(2) : 'N/A';
+            document.getElementById('ma200').textContent = ma200.length ? ma200[ma200.length - 1].toFixed(2) : 'N/A';
+        }
+
         function parseCSVData(csvData) {
-            const parsedData = Papa.parse(csvData, {
+            Papa.parse(csvData, {
                 header: true,
                 dynamicTyping: true,
                 skipEmptyLines: true,
@@ -91,6 +118,14 @@
 
                     // Update the candle counts
                     updateCandleCounts(candlestickData);
+
+                    // Calculate moving averages
+                    const ma20 = calculateMovingAverage(candlestickData, 20);
+                    const ma50 = calculateMovingAverage(candlestickData, 50);
+                    const ma200 = calculateMovingAverage(candlestickData, 200);
+
+                    // Update moving averages in UI
+                    updateMovingAverages(ma20, ma50, ma200);
                 }
             });
         }
