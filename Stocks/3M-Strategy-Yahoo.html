@@ -11,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial/dist/chartjs-chart-financial.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.1/dist/chartjs-plugin-zoom.min.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 
@@ -61,6 +62,42 @@
                     label: 'Stock Price',
                     data: []
                 }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'month',
+                            tooltipFormat: 'll',
+                            displayFormats: {
+                                month: 'MMM yyyy'
+                            }
+                        },
+                        ticks: {
+                            source: 'data',
+                            autoSkip: false,
+                            maxRotation: 0,
+                            minRotation: 0
+                        }
+                    },
+                    y: {
+                        beginAtZero: false
+                    }
+                },
+                plugins: {
+                    zoom: {
+                        pan: {
+                            enabled: true,
+                            mode: 'x',  // Allow panning in the x-axis only
+                        },
+                        zoom: {
+                            enabled: true,
+                            mode: 'x',  // Allow zooming in the x-axis only
+                            drag: true
+                        }
+                    }
+                }
             }
         });
 
@@ -98,6 +135,42 @@
             document.getElementById('ma200').textContent = ma200.length ? ma200[ma200.length - 1].toFixed(2) : 'N/A';
         }
 
+        function aggregateToMonthly(data) {
+            const monthlyData = [];
+            let currentMonth = null;
+            let monthlyCandle = null;
+
+            data.forEach(candle => {
+                const date = new Date(candle.x);
+                const month = `${date.getFullYear()}-${date.getMonth() + 1}`; // Format: YYYY-MM
+
+                if (currentMonth !== month) {
+                    if (monthlyCandle) {
+                        monthlyData.push(monthlyCandle);
+                    }
+                    currentMonth = month;
+                    monthlyCandle = {
+                        x: date.getTime(), // Set the timestamp for the first day of the month
+                        o: candle.o,
+                        h: candle.h,
+                        l: candle.l,
+                        c: candle.c
+                    };
+                } else {
+                    monthlyCandle.h = Math.max(monthlyCandle.h, candle.h);
+                    monthlyCandle.l = Math.min(monthlyCandle.l, candle.l);
+                    monthlyCandle.c = candle.c; // Close price of the last day in the month
+                }
+            });
+
+            // Push the last monthly candle
+            if (monthlyCandle) {
+                monthlyData.push(monthlyCandle);
+            }
+
+            return monthlyData;
+        }
+
         function parseCSVData(csvData) {
             Papa.parse(csvData, {
                 header: true,
@@ -112,17 +185,20 @@
                         c: row['Close']
                     }));
 
-                    // Update the chart with the historical data
-                    chart.config.data.datasets[0].data = candlestickData;
+                    // Aggregate data into monthly candles
+                    const monthlyCandlestickData = aggregateToMonthly(candlestickData);
+
+                    // Update the chart with the monthly data
+                    chart.config.data.datasets[0].data = monthlyCandlestickData;
                     chart.update();
 
                     // Update the candle counts
-                    updateCandleCounts(candlestickData);
+                    updateCandleCounts(monthlyCandlestickData);
 
                     // Calculate moving averages
-                    const ma20 = calculateMovingAverage(candlestickData, 20);
-                    const ma50 = calculateMovingAverage(candlestickData, 50);
-                    const ma200 = calculateMovingAverage(candlestickData, 200);
+                    const ma20 = calculateMovingAverage(monthlyCandlestickData, 20);
+                    const ma50 = calculateMovingAverage(monthlyCandlestickData, 50);
+                    const ma200 = calculateMovingAverage(monthlyCandlestickData, 200);
 
                     // Update moving averages in UI
                     updateMovingAverages(ma20, ma50, ma200);
