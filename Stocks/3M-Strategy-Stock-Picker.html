@@ -62,6 +62,15 @@
             </div>
         </div>
 
+        <div id="candleCount" class="mt-4">
+            <h3>Candle Count</h3>
+            <ul>
+                <li>Total Green Candles: <span id="greenCount">0</span></li>
+                <li>Total Red Candles: <span id="redCount">0</span></li>
+            </ul>
+        </div>
+
+
         <div id="stockPrice" class="mt-4"></div>
         <ul id="todayPrice" class="list-unstyled mt-4"></ul>
         <div class="conatiner">
@@ -102,6 +111,23 @@
             return Math.random() * (max - min) + min;
         }
 
+        function updateCandleCounts(data) {
+            let greenCount = 0;
+            let redCount = 0;
+
+            data.forEach(candle => {
+                if (candle.c > candle.o) {
+                    greenCount++;
+                } else if (candle.c < candle.o) {
+                    redCount++;
+                }
+            });
+
+            document.getElementById('greenCount').textContent = greenCount;
+            document.getElementById('redCount').textContent = redCount;
+        }
+
+
         function randomBar(target, index, date, lastClose) {
             var open = +randomNumber(lastClose * 0.95, lastClose * 1.05).toFixed(2);
             var close = +randomNumber(open * 0.95, open * 1.05).toFixed(2);
@@ -133,6 +159,22 @@
                     i++;
                 }
             }
+        }
+
+        function updateCandleCounts(data) {
+            let greenCount = 0;
+            let redCount = 0;
+
+            data.forEach(candle => {
+                if (candle.c > candle.o) {
+                    greenCount++;
+                } else if (candle.c < candle.o) {
+                    redCount++;
+                }
+            });
+
+            document.getElementById('greenCount').textContent = greenCount;
+            document.getElementById('redCount').textContent = redCount;
         }
 
         var update = function () {
@@ -174,7 +216,11 @@
                 chart.config.data.datasets[1].hidden = true;
             }
 
+            // Update the chart
             chart.update();
+
+            // Update the candle counts
+            updateCandleCounts(chart.config.data.datasets[0].data);
         };
 
         [...document.getElementsByTagName('select')].forEach(element => element.addEventListener('change', update));
@@ -231,6 +277,9 @@
                     chart.config.data.datasets[1].data = filteredData.map(d => ({ x: d.x, y: d.c }));
                     chart.update();
 
+                    // Update the candle counts
+                    updateCandleCounts(filteredData);
+
                     // Fetch current stock price
                     return fetch(globalQuoteApiUrl);
                 })
@@ -247,7 +296,7 @@
                             <li>Low: ${stockData['04. low']}</li>
                             <li>Previous Close: ${stockData['08. previous close']}</li>
                             <li>Latest Trading Day: ${stockData['07. latest trading day']}</li>
-                        `;
+                `;
                     } else {
                         document.getElementById('todayPrice').innerHTML = `<li>Could not retrieve current price for symbol: ${symbol}</li>`;
                     }
@@ -257,6 +306,7 @@
                     console.error('Error fetching data:', error);
                 });
         });
+
 
 
 
