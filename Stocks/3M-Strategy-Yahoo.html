@@ -29,6 +29,7 @@
         <div id="candleCount" class="mt-4">
             <h3>Candle Count</h3>
             <ul>
+                <li>Total Bars: <span id="totalCount">0</span></li>
                 <li>Total Green Candles: <span id="greenCount">0</span></li>
                 <li>Total Red Candles: <span id="redCount">0</span></li>
             </ul>
@@ -104,6 +105,7 @@
         function updateCandleCounts(data) {
             let greenCount = 0;
             let redCount = 0;
+            let totalCount = data.length;
 
             data.forEach(candle => {
                 if (candle.c > candle.o) {
@@ -113,6 +115,7 @@
                 }
             });
 
+            document.getElementById('totalCount').textContent = totalCount;
             document.getElementById('greenCount').textContent = greenCount;
             document.getElementById('redCount').textContent = redCount;
         }
@@ -185,8 +188,18 @@
                         c: row['Close']
                     }));
 
+                    // Calculate 200MA on daily data
+                    const ma200 = calculateMovingAverage(candlestickData, 200);
+
                     // Aggregate data into monthly candles
                     const monthlyCandlestickData = aggregateToMonthly(candlestickData);
+
+                    // Calculate moving averages on monthly data
+                    const ma20 = calculateMovingAverage(monthlyCandlestickData, 20);
+                    const ma50 = calculateMovingAverage(monthlyCandlestickData, 50);
+
+                    // Update moving averages in UI
+                    updateMovingAverages(ma20, ma50, ma200);
 
                     // Update the chart with the monthly data
                     chart.config.data.datasets[0].data = monthlyCandlestickData;
@@ -194,14 +207,6 @@
 
                     // Update the candle counts
                     updateCandleCounts(monthlyCandlestickData);
-
-                    // Calculate moving averages
-                    const ma20 = calculateMovingAverage(monthlyCandlestickData, 20);
-                    const ma50 = calculateMovingAverage(monthlyCandlestickData, 50);
-                    const ma200 = calculateMovingAverage(monthlyCandlestickData, 200);
-
-                    // Update moving averages in UI
-                    updateMovingAverages(ma20, ma50, ma200);
                 }
             });
         }
