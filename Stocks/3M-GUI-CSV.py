@@ -48,7 +48,11 @@ def fetch_data():
         messagebox.showerror("Error", "Please enter a stock symbol.")
         return
     try:
+        # Download historical stock data
         stock_data = yf.download(symbol, start="2000-01-01")
+        # Fetch the current price
+        current_price = yf.Ticker(symbol).history(period="1d")['Close'].iloc[-1]
+
         data = []
         for date, row in stock_data.iterrows():
             data.append({
@@ -57,12 +61,14 @@ def fetch_data():
                 "Close": row['Close']
             })
         results = calculate_monthly_sma_and_candles(data)
+        results["Current Price"] = current_price
         display_results(results)
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {str(e)}")
 
 def display_results(results):
     result_text = (
+        f"Current Price: {results['Current Price']}\n"
         f"Latest 20-month SMA: {results['SMA_20']}\n"
         f"Latest 50-month SMA: {results['SMA_50']}\n"
         f"Latest 200-month SMA: {results['SMA_200']}\n"
