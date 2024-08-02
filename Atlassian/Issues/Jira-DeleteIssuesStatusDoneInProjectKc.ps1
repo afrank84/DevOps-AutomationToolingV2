@@ -3,6 +3,17 @@ $JiraUrl = $env:JIRA_URL       # Replace with your Jira URL
 $Username = $env:JIRA_USERNAME # Replace with your Jira username
 $Password = $env:JIRA_API      # Replace with your Jira API token or password
 
+# Print out the environment variables for troubleshooting
+Write-Host "JIRA_URL: $JiraUrl"
+Write-Host "JIRA_USERNAME: $Username"
+Write-Host "JIRA_API: $Password"
+
+# Validate the JIRA URL
+if (-not $JiraUrl.StartsWith("http")) {
+    Write-Host "Error: JIRA_URL must start with 'http' or 'https'."
+    return
+}
+
 # Base64 encode your credentials
 $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("${Username}:${Password}")))
 
@@ -41,4 +52,5 @@ try {
 }
 catch {
     Write-Host "Error searching or deleting issues: $($_.Exception.Message)"
+    Write-Host "Error details: $($_.Exception.InnerException)"
 }
