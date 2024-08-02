@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Price Checker with Interactive Candlestick Chart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial/dist/chartjs-chart-financial.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1>Stock Price Checker with Interactive Candlestick Chart</h1>
+        <form id="csvForm" class="mb-4">
+            <div class="mb-3">
+                <label for="csvFile" class="form-label">Upload CSV File</label>
+                <input type="file" class="form-control" id="csvFile" accept=".csv">
+            </div>
+            <button type="submit" class="btn btn-primary">Load Chart</button>
+        </form>
+
+        <div id="candleCount" class="mt-4">
+            <h3>Candle Count</h3>
+            <ul>
+                <li>Total Bars: <span id="totalCount">0</span></li>
+                <li>Total Green Candles: <span id="greenCount">0</span></li>
+                <li>Total Red Candles: <span id="redCount">0</span></li>
+            </ul>
+        </div>
+
+        <div id="movingAverages" class="mt-4">
+            <h3>Moving Averages</h3>
+            <ul>
+                <li>Latest 20MA: <span id="ma20">0</span></li>
+                <li>Latest 50MA: <span id="ma50">0</span></li>
+                <li>Latest 200MA: <span id="ma200">0</span></li>
+            </ul>
+        </div>
+
+        <div id="stockPrice" class="mt-4"></div>
+        <ul id="todayPrice" class="list-unstyled mt-4"></ul>
+        <div class="container">
+            <canvas id="chart" class="mt-5"></canvas>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var ctx = document.getElementById('chart').getContext('2d');
+        ctx.canvas.width = 1000;
+        ctx.canvas.height = 250;
+
+        var chart = new Chart(ctx, {
+            type: 'candlestick',
+            data: {
+                datasets: [{
+                    label: 'Stock Price',
+                    data: []
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'month',
+                            tooltipFormat: 'll',
+                            displayFormats: {
+                                month: 'MMM yyyy'
+                            }
+                        },
+                        ticks: {
+                            source: 'data',
+                            autoSkip: false,
+                            maxRotation: 0,
+                            minRotation: 0
+                        }
+                    },
+                    y: {
+                        beginAtZero: false
+                    }
+                },
+                plugins: {
+                    zoom: {
+                        pan: {
+                            enabled: true,
+                            mode: 'x',  // Allow panning in the x-axis only
+                        },
+                        zoom: {
+                            enabled: true,
+                            mode: 'x',  // Allow zooming in the x-axis only
+                            drag: true
+                        }
+                    }
+                }
+            }
+        });
+
+        function updateCandleCounts(data) {
+            let greenCount = 0;
+            let redCount = 0;
+            let totalCount = data.length;
+
+            data.forEach(candle => {
+                if (candle.c > candle.o) {
+                    greenCount++;
+                } else if (candle.c < candle.o) {
+                    redCount++;
+                }
+            });
+
+            document.getElementById('totalCount').textContent = totalCount;
+            document.getElementById('greenCount').textContent = greenCount;
+            document.getElementById('redCount').textContent = redCount;
+        }
+
+        function calculateMovingAverage(data, period) {
+            let movingAverages = [];
+            for (let i = 0; i <= data.length - period; i++) {
+                let sum = 0;
+                for (let j = 0; j < period; j++) {
+                    sum += data[i + j].c;
+                }
+                movingAverages.push(sum / period);
+            }
+            return movingAverages;
+        }
+
+        function updateMovingAverages(ma20, ma50, ma200) {
+            document.getElementById('ma20').textContent = ma20.length ? ma20[ma20.length - 1].toFixed(2) : 'N/A';
+            document.getElementById('ma50').textContent = ma50.length ? ma50[ma50.length - 1].toFixed(2) : 'N/A';
+            document.getElementById('ma200').textContent = ma200.length ? ma200[ma200.length - 1].toFixed(2) : 'N/A';
+        }
+
+        function aggregateToMonthly(data) {
+            const monthlyData = [];
+            let currentMonth = null;
+            let monthlyCandle = null;
+
+            data.forEach(candle => {
+                const date = new Date(candle.x);
+                const month = `${date.getFullYear()}-${date.getMonth() + 1}`; // Format: YYYY-MM
+
+                if (currentMonth !== month) {
+                    if (monthlyCandle) {
+                        monthlyData.push(monthlyCandle);
+                    }
+                    currentMonth = month;
+                    monthlyCandle = {
+                        x: date.getTime(), // Set the timestamp for the first day of the month
+                        o: candle.o,
+                        h: candle.h,
+                        l: candle.l,
+                        c: candle.c
+                    };
+                } else {
+                    monthlyCandle.h = Math.max(monthlyCandle.h, candle.h);
+                    monthlyCandle.l = Math.min(monthlyCandle.l, candle.l);
+                    monthlyCandle.c = candle.c; // Close price of the last day in the month
+                }
+            });
+
+            // Push the last monthly candle
+            if (monthlyCandle) {
+                monthlyData.push(monthlyCandle);
+            }
+
+            return monthlyData;
+        }
+
+        function parseCSVData(csvData) {
+            Papa.parse(csvData, {
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    const candlestickData = results.data.map(row => ({
+                        x: new Date(row['Date']).getTime(),
+                        o: row['Open'],
+                        h: row['High'],
+                        l: row['Low'],
+                        c: row['Close']
+                    }));
+
+                    // Calculate 200MA on daily data
+                    const ma200 = calculateMovingAverage(candlestickData, 200);
+
+                    // Aggregate data into monthly candles
+                    const monthlyCandlestickData = aggregateToMonthly(candlestickData);
+
+                    // Calculate moving averages on monthly data
+                    const ma20 = calculateMovingAverage(monthlyCandlestickData, 20);
+                    const ma50 = calculateMovingAverage(monthlyCandlestickData, 50);
+
+                    // Update moving averages in UI
+                    updateMovingAverages(ma20, ma50, ma200);
+
+                    // Update the chart with the monthly data
+                    chart.config.data.datasets[0].data = monthlyCandlestickData;
+                    chart.update();
+
+                    // Update the candle counts
+                    updateCandleCounts(monthlyCandlestickData);
+                }
+            });
+        }
+
+        document.getElementById('csvForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const csvData = e.target.result;
+                    parseCSVData(csvData);
+                };
+                reader.readAsText(file);
+            } else {
+                alert("Please upload a CSV file.");
+            }
+        });
+    </script>
+</body>
+
+</html>
