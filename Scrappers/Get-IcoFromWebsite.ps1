@@ -12,8 +12,11 @@ if ($faviconUrl -notmatch "^https?://") {
     $faviconUrl = [Uri]::new($websiteUrl, $faviconUrl).AbsoluteUri
 }
 
-# Define the output path for the .ico file
-$outputPath = ""
+# Get the current directory
+$currentDirectory = Get-Location
+
+# Define the output path for the .ico file in the same folder
+$outputPath = Join-Path -Path $currentDirectory -ChildPath "favicon.ico"
 
 # Download the favicon
 Invoke-WebRequest -Uri $faviconUrl -OutFile $outputPath
