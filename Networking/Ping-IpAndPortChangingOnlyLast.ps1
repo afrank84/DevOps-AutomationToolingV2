@@ -51,9 +51,10 @@ function Test-PortRange {
 }
 
 # Example usage
-$BaseIP = Read-Host "Enter the base IP address (e.g., 10.0.0)"
-$Port = [int](Read-Host "Enter the port number to check")
-$Start = [int](Read-Host "Enter the start of the last octet range (e.g., 1)")
-$End = [int](Read-Host "Enter the end of the last octet range (e.g., 254)")
+$BaseIP = Read-Host "Enter the base IP address (e.g., 10.0.0)"          # Example input: 10.0.0
+$Port = [int](Read-Host "Enter the port number to check (e.g., 25565)") # Example input: 25565
+$Start = [int](Read-Host "Enter the start of the last octet range (e.g., 1)")  # Example input: 1
+$End = [int](Read-Host "Enter the end of the last octet range (e.g., 254)")    # Example input: 254
+
 
 Test-PortRange -BaseIP $BaseIP -Port $Port -Start $Start -End $End
