@@ -16,7 +16,7 @@ jobs:
     - name: Run PowerShell script
       shell: pwsh
       env:
-        JIRA_URL: ${{ secrets.JIRA_URL }}
-        JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
-        JIRA_API: ${{ secrets.JIRA_API }}
+        JIRA_URL: ${{ secrets.JIRA_PERSONAL_BASE_URL }}
+        JIRA_USERNAME: ${{ secrets.JIRA_PERSONAL_EMAIL }}
+        JIRA_API: ${{ secrets.JIRA_PERSONAL_API_TOKEN }}
       run: ./Atlassian/Issues/Jira-DeleteIssuesStatusDoneInProjectKc.ps1
