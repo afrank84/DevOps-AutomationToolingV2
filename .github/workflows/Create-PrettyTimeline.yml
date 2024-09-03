@@ -1,4 +1,4 @@
-name: Generate Git Log Graph
+name: Generate Git Graph
 
 on:
   push:
@@ -7,12 +7,60 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  generate-git-graph:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install Dependencies
+        run: npm install @gitgraph/js @gitgraph/svg jsdom
+
       - name: Generate Git Log Graph
+        run: git log --graph --oneline --all > git-log-graph.txt
+
+      - name: Create GitGraph SVG
         run: |
-          git log --graph --oneline --all > git-log-graph.txt
+          node -e "
+          const fs = require('fs');
+          const { createGitgraph } = require('@gitgraph/js');
+          const { createSVGRender } = require('@gitgraph/svg');
+          const jsdom = require('jsdom');
+          const { JSDOM } = jsdom;
+          
+          const logData = fs.readFileSync('git-log-graph.txt', 'utf8');
+          const commitLines = logData.split('\n');
+
+          // Initialize JSDOM and Gitgraph.js
+          const dom = new JSDOM('<!DOCTYPE html><body></body>');
+          global.document = dom.window.document;
+          
+          const gitgraphContainer = document.createElement('div');
+          const gitgraph = createGitgraph(gitgraphContainer, {
+            template: 'metro', // You can customize the template
+          });
+
+          commitLines.forEach((line) => {
+            const [hash, ...messageParts] = line.split(' ');
+            const message = messageParts.join(' ');
+            gitgraph.commit({
+              subject: message,
+              hash,
+            });
+          });
+
+          const { svg } = createSVGRender(gitgraph.getRenderedData());
+          fs.writeFileSync('gitgraph-output.svg', svg);
+          "
+
+      - name: Upload GitGraph SVG
+        uses: actions/upload-artifact@v3
+        with:
+          name: git-graph
+          path: gitgraph-output.svg
