@@ -1,1 +1,25 @@
+name: Generate Git Graph
 
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install GitGraph
+        run: |
+          npm install -g gitgraph
+          gitgraph -o graph.svg
+
+      - name: Upload Git Graph
+        uses: actions/upload-artifact@v3
+        with:
+          name: git-graph
+          path: graph.svg
