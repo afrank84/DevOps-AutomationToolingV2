@@ -20,7 +20,7 @@ jobs:
           node-version: '16'
 
       - name: Install Dependencies
-        run: npm install @gitgraph/js @gitgraph/svg jsdom
+        run: npm install @gitgraph/js jsdom
 
       - name: Generate Git Log Graph
         run: git log --graph --oneline --all > git-log-graph.txt
@@ -30,17 +30,16 @@ jobs:
           node -e "
           const fs = require('fs');
           const { createGitgraph } = require('@gitgraph/js');
-          const { createSVGRender } = require('@gitgraph/svg');
           const jsdom = require('jsdom');
           const { JSDOM } = jsdom;
-          
+
           const logData = fs.readFileSync('git-log-graph.txt', 'utf8');
-          const commitLines = logData.split('\n');
+          const commitLines = logData.split('\\n');
 
           // Initialize JSDOM and Gitgraph.js
           const dom = new JSDOM('<!DOCTYPE html><body></body>');
           global.document = dom.window.document;
-          
+
           const gitgraphContainer = document.createElement('div');
           const gitgraph = createGitgraph(gitgraphContainer, {
             template: 'metro', // You can customize the template
@@ -55,8 +54,9 @@ jobs:
             });
           });
 
-          const { svg } = createSVGRender(gitgraph.getRenderedData());
-          fs.writeFileSync('gitgraph-output.svg', svg);
+          const svgElement = gitgraphContainer.querySelector('svg');
+          const svgContent = svgElement.outerHTML;
+          fs.writeFileSync('gitgraph-output.svg', svgContent);
           "
 
       - name: Upload GitGraph SVG
