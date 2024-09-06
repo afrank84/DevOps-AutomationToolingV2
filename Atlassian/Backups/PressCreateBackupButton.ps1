@@ -3,7 +3,7 @@ $Password = "your_password" #PAT token is fine
 $JiraInstanceUrl = "https://your-address-here"
 
 # Encode credentials to base64 for Basic Auth
-$EncodedCreds = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$Username:$Password"))
+$EncodedCreds = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$($Username):$($Password)"))
 
 # Define the payload
 $Payload = @{
@@ -12,8 +12,8 @@ $Payload = @{
 } | ConvertTo-Json
 
 # Trigger the backup
-$response = Invoke-RestMethod -Uri "$JiraInstanceUrl/rest/backup/1/export/runbackup" -Method Post -Headers @{
-    Authorization = "Basic $EncodedCreds"
+$response = Invoke-RestMethod -Uri "$($JiraInstanceUrl)/rest/backup/1/export/runbackup" -Method Post -Headers @{
+    Authorization = "Basic $($EncodedCreds)"
     "Content-Type" = "application/json"
 } -Body $Payload
 
