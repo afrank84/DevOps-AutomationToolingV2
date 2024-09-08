@@ -2,7 +2,7 @@
 $version = Read-Host "Enter the Minecraft version (e.g., 1.20)"
 $minecraftDir = "$env:APPDATA\.minecraft\versions\$version"
 $jarFile = "$minecraftDir\$version.jar"
-$destinationDir = "$env:USERPROFILE\Downloads\Minecraft_Default_Textures_$version"
+$destinationDir = "$env:USERPROFILE\Documents\Minecraft_Default_Textures_$version"
 $tempExtractDir = "$env:TEMP\MinecraftTextures"
 
 # Check if the version jar file exists
