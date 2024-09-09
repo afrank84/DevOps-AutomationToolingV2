@@ -61,6 +61,9 @@ The script will output information about each issue with attachments, including:
 
 At the end, it will display summary statistics for all issues found.
 
+![image](https://github.com/user-attachments/assets/277917e2-3d05-4712-a3f2-a12a4fc40500)
+
+
 ## Customization
 
 You can modify the `JQL_QUERY` variable in the script to change the search criteria for issues. The default query `"attachments IS NOT EMPTY"` finds all issues with attachments, but you can add additional conditions to narrow down the search.
