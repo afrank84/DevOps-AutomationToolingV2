@@ -21,6 +21,25 @@ JIRA_URL = config["jira_url"]
 USERNAME = config["username"]
 API_TOKEN = config["api_token"]
 
+# Function to parse Jira's description field and convert it to readable markdown
+def parse_description(description_content):
+    md_description = ""
+    
+    if description_content['type'] == 'doc':
+        for content_block in description_content.get('content', []):
+            if content_block['type'] == 'paragraph':
+                for item in content_block.get('content', []):
+                    md_description += item.get('text', '') + '\n\n'
+            elif content_block['type'] == 'orderedList':
+                for i, list_item in enumerate(content_block['content'], 1):
+                    list_text = list_item['content'][0]['content'][0]['text']
+                    md_description += f"{i}. {list_text}\n"
+            elif content_block['type'] == 'bulletList':
+                for list_item in content_block['content']:
+                    list_text = list_item['content'][0]['content'][0]['text']
+                    md_description += f"- {list_text}\n"
+    return md_description.strip()
+
 # Function to get issue data from Jira API using HTTPBasicAuth
 def get_jira_issue(issue_key):
     url = f"{JIRA_URL}/rest/api/3/issue/{issue_key}"
@@ -41,9 +60,11 @@ def get_jira_issue(issue_key):
         return None
 
 # Function to convert Jira issue data to markdown
+# Function to convert Jira issue data to markdown
 def convert_issue_to_markdown(issue_data, output_file):
     summary = issue_data['fields']['summary']
-    description = issue_data['fields']['description'] or "No description provided."
+    description_content = issue_data['fields']['description']['content']
+    description = parse_description(issue_data['fields']['description']) or "No description provided."
     status = issue_data['fields']['status']['name']
     priority = issue_data['fields']['priority']['name'] if issue_data['fields']['priority'] else "No priority"
     assignee = issue_data['fields']['assignee']['displayName'] if issue_data['fields']['assignee'] else "Unassigned"
@@ -66,14 +87,23 @@ def convert_issue_to_markdown(issue_data, output_file):
 """
     for comment in comments:
         author = comment['author']['displayName']
-        body = comment['body']['content'][0]['content'][0]['text']
-        md_content += f"\n### Comment by {author}\n{body}\n"
+        comment_body = "No text available"  # Default fallback if text is not found
+
+        # Try to extract the comment text safely
+        for content_block in comment['body'].get('content', []):
+            for content_item in content_block.get('content', []):
+                if content_item.get('type') == 'text':
+                    comment_body = content_item.get('text', comment_body)
+                    break
+
+        md_content += f"\n### Comment by {author}\n{comment_body}\n"
 
     # Save markdown content to a file
     with open(output_file, 'w') as md_file:
         md_file.write(md_content)
 
     print(f"Markdown file {output_file} created successfully.")
+
 
 def main():
     issue_key = input("Enter the Jira issue key (e.g., PROJECT-123): ")
