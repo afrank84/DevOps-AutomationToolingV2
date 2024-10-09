@@ -2,23 +2,28 @@ import requests
 import json
 import os
 
-# Airtable API endpoint
-BASE_URL = "https://api.airtable.com/v0"
-
-# Your Airtable base ID and table name
-BASE_ID = "your_base_id_here"
-TABLE_NAME = "your_table_name_here"
-
-# Your personal access token
-PAT = "your_personal_access_token_here"
+def load_config():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(script_dir, '..', 'Data', 'airtable_config.json')
+    
+    try:
+        with open(config_path, 'r') as config_file:
+            return json.load(config_file)
+    except FileNotFoundError:
+        print(f"Config file not found at {config_path}")
+        return None
+    except json.JSONDecodeError:
+        print(f"Error decoding JSON from {config_path}")
+        return None
 
 def download_table(base_id, table_name, pat):
+    base_url = "https://api.airtable.com/v0"
     headers = {
         "Authorization": f"Bearer {pat}",
         "Content-Type": "application/json"
     }
     
-    url = f"{BASE_URL}/{base_id}/{table_name}"
+    url = f"{base_url}/{base_id}/{table_name}"
     all_records = []
     
     while True:
@@ -32,7 +37,7 @@ def download_table(base_id, table_name, pat):
         all_records.extend(data['records'])
         
         if 'offset' in data:
-            url = f"{BASE_URL}/{base_id}/{table_name}?offset={data['offset']}"
+            url = f"{base_url}/{base_id}/{table_name}?offset={data['offset']}"
         else:
             break
     
@@ -43,9 +48,23 @@ def save_to_json(data, filename):
         json.dump(data, f, indent=2)
 
 if __name__ == "__main__":
-    records = download_table(BASE_ID, TABLE_NAME, PAT)
+    config = load_config()
+    if not config:
+        print("Failed to load configuration. Exiting.")
+        exit(1)
+
+    base_id = config.get('BASE_ID')
+    table_name = config.get('TABLE_NAME')
+    pat = config.get('PAT')
+
+    if not all([base_id, table_name, pat]):
+        print("Missing required configuration. Please check your config file.")
+        exit(1)
+
+    records = download_table(base_id, table_name, pat)
     if records:
-        filename = f"{TABLE_NAME}_data.json"
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        filename = os.path.join(script_dir, f"{table_name}_data.json")
         save_to_json(records, filename)
         print(f"Data saved to {filename}")
     else:
