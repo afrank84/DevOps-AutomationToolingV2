@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 
 def json_to_sql(json_file_path):
@@ -18,32 +19,39 @@ def json_to_sql(json_file_path):
     return sql_statements
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <path_to_json_file>")
-        sys.exit(1)
+    # Get the current script's directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
     
-    json_file_path = sys.argv[1]
+    # Construct the path to the JSON file
+    json_file_path = os.path.join(script_dir, '..', 'Data', 'Vegetable-and-Fruit_data.json')
     
     try:
+        # Check if the file exists
+        if not os.path.exists(json_file_path):
+            raise FileNotFoundError(f"The file '{json_file_path}' does not exist.")
+        
+        print(f"Processing file: {json_file_path}")
         sql_statements = json_to_sql(json_file_path)
         
         # Print SQL statements
         for statement in sql_statements:
             print(statement)
         
-        # Optionally, write to a file
-        with open('output.sql', 'w') as file:
+        # Write to a file
+        output_file = os.path.join(script_dir, 'output.sql')
+        with open(output_file, 'w') as file:
             for statement in sql_statements:
                 file.write(statement + '\n')
         
-        print(f"\nGenerated {len(sql_statements)} SQL statements. Also saved to 'output.sql'.")
+        print(f"\nGenerated {len(sql_statements)} SQL statements.")
+        print(f"SQL statements have been saved to: {output_file}")
     
-    except FileNotFoundError:
-        print(f"Error: File '{json_file_path}' not found.")
+    except FileNotFoundError as e:
+        print(f"Error: {str(e)}")
     except json.JSONDecodeError:
         print(f"Error: '{json_file_path}' is not a valid JSON file.")
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        print(f"An unexpected error occurred: {str(e)}")
 
 if __name__ == "__main__":
     main()
