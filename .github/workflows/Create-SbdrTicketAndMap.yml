@@ -41,36 +41,36 @@ jobs:
           tool="${{ github.event.inputs.tool }}"
           maps_link="${{ steps.generate_link.outputs.maps_link }}"
 
-          issue_data=$(cat <<EOF
-          {
-            "fields": {
-              "project": { "key": "SBDRF" },
-              "summary": "Address Task: $address",
-              "description": {
-                "type": "doc",
-                "version": 1,
-                "content": [
-                  {
-                    "type": "paragraph",
-                    "content": [
-                      { "type": "text", "text": "Tool: " },
-                      { "type": "text", "text": "$tool", "marks": [{ "type": "strong" }] }
-                    ]
-                  },
-                  {
-                    "type": "paragraph",
-                    "content": [
-                      { "type": "text", "text": "Google Maps link: " },
-                      { "type": "text", "text": "$maps_link", "marks": [{ "type": "link", "attrs": { "href": "$maps_link" } }] }
-                    ]
-                  }
-                ]
-              },
-              "issuetype": { "name": "Task" }
-            }
-          }
-EOF
-          )
+          issue_data=$(jq -n \
+            --arg summary "Address Task: $address" \
+            --argjson description '{
+              "type": "doc",
+              "version": 1,
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    { "type": "text", "text": "Tool: " },
+                    { "type": "text", "text": "'"$tool"'", "marks": [{ "type": "strong" }] }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "content": [
+                    { "type": "text", "text": "Google Maps link: " },
+                    { "type": "text", "text": "'"$maps_link"'", "marks": [{ "type": "link", "attrs": { "href": "'"$maps_link"'" } }] }
+                  ]
+                }
+              ]
+            }' \
+            '{
+              fields: {
+                project: { key: "SBDRF" },
+                summary: $summary,
+                description: $description,
+                issuetype: { name: "Task" }
+              }
+            }')
 
           curl -X POST \
             --url "$JIRA_BASE_URL/rest/api/3/issue" \
