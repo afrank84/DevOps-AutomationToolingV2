@@ -1,0 +1,35 @@
+# .github/workflows/create-google-maps-link.yml
+name: Create Google Maps Link
+
+on:
+  workflow_dispatch:  # Trigger manually
+    inputs:
+      address:
+        description: "Enter the address to generate the Google Maps link"
+        required: true
+
+jobs:
+  generate-link:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Encode Address and Create Google Maps Link
+        id: generate
+        run: |
+          ENCODED_ADDRESS=$(echo "${{ github.event.inputs.address }}" | jq -sRr @uri)
+          echo "::set-output name=maps_link::https://www.google.com/maps/search/?api=1&query=${ENCODED_ADDRESS}"
+      
+      - name: Display Google Maps Link in Logs
+        run: |
+          echo "::notice::Here is the Google Maps link: ${{ steps.generate.outputs.maps_link }}"
+
+      - name: Post Link as Issue Comment (Optional)
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number || 1,  # Adjust issue number as needed
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `Here is your Google Maps link: [Click Here](${{ steps.generate.outputs.maps_link }})`
+            })
