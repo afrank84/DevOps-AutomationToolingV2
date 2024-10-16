@@ -16,8 +16,8 @@ on:
           - Mud-Out
 
 jobs:
-  generate-link:
-    runs-on: ubuntu-latest  # Use Ubuntu runner
+  generate-ticket:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Generate Google Maps Link
@@ -32,6 +32,7 @@ jobs:
           echo "::set-output name=address::$address"
 
       - name: Create Jira Ticket
+        id: create_ticket
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_PERSONAL_BASE_URL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_PERSONAL_API_TOKEN }}
@@ -39,34 +40,61 @@ jobs:
         run: |
           address="${{ steps.generate_link.outputs.address }}"
           tool="${{ github.event.inputs.tool }}"
-          maps_link="${{ steps.generate_link.outputs.maps_link }}"
-        
+
           issue_data=$(jq -n \
             --arg summary "Address Task: $address" \
-            --arg description "Tool: $tool\n\nGoogle Maps link: [$maps_link]($maps_link)" \
+            --argjson description '{
+              "type": "doc",
+              "version": 1,
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    { "type": "text", "text": "Tool: " },
+                    { "type": "text", "text": "'"$tool"'", "marks": [{ "type": "strong" }] }
+                  ]
+                }
+              ]
+            }' \
             '{
               fields: {
                 project: { key: "SBDRF" },
                 summary: $summary,
-                description: {
-                  "type": "doc",
-                  "version": 1,
-                  "content": [
-                    {
-                      "type": "paragraph",
-                      "content": [
-                        { "type": "text", "text": $description }
-                      ]
-                    }
-                  ]
-                },
+                description: $description,
                 issuetype: { name: "Chainsaw" }
               }
             }')
-        
-          curl -X POST \
+
+          response=$(curl -s -X POST \
             --url "$JIRA_BASE_URL/rest/api/3/issue" \
             --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
             --header 'Content-Type: application/json' \
-            --data "$issue_data"
+            --data "$issue_data")
 
+          issue_key=$(echo "$response" | jq -r '.key')
+          echo "::set-output name=issue_key::$issue_key"
+
+      - name: Add Google Maps Link to Jira Ticket
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_PERSONAL_BASE_URL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_PERSONAL_API_TOKEN }}
+          JIRA_EMAIL: ${{ secrets.JIRA_PERSONAL_EMAIL }}
+        run: |
+          issue_key="${{ steps.create_ticket.outputs.issue_key }}"
+          maps_link="${{ steps.generate_link.outputs.maps_link }}"
+
+          link_data=$(jq -n \
+            --arg url "$maps_link" \
+            --arg title "Google Maps Location" \
+            '{
+              object: {
+                url: $url,
+                title: $title
+              }
+            }')
+
+          curl -X POST \
+            --url "$JIRA_BASE_URL/rest/api/3/issue/$issue_key/remotelink" \
+            --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data "$link_data"
