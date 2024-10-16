@@ -27,7 +27,6 @@ jobs:
           tool="${{ github.event.inputs.tool }}"
           encoded_address=$(echo "$address" | jq -sRr @uri)
           maps_link="https://www.google.com/maps/search/?api=1&query=$encoded_address"
-          echo "Generated Google Maps link: $maps_link"
           echo "::set-output name=maps_link::$maps_link"
           echo "::set-output name=address::$address"
 
@@ -87,9 +86,15 @@ jobs:
             --arg url "$maps_link" \
             --arg title "Google Maps Location" \
             '{
-              object: {
-                url: $url,
-                title: $title
+              "globalId": $url,
+              "application": {
+                "type": "com.atlassian.jira",
+                "name": "Google Maps"
+              },
+              "relationship": "links to",
+              "object": {
+                "url": $url,
+                "title": $title
               }
             }')
 
