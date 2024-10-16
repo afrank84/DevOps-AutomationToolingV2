@@ -29,6 +29,7 @@ jobs:
           maps_link="https://www.google.com/maps/search/?api=1&query=$encoded_address"
           echo "Generated Google Maps link: $maps_link"
           echo "::set-output name=maps_link::$maps_link"
+          echo "::set-output name=address::$address"
 
       - name: Create Jira Ticket
         env:
@@ -36,44 +37,43 @@ jobs:
           JIRA_API_TOKEN: ${{ secrets.JIRA_PERSONAL_API_TOKEN }}
           JIRA_EMAIL: ${{ secrets.JIRA_PERSONAL_EMAIL }}
         run: |
-          address="${{ github.event.inputs.address }}"
+          address="${{ steps.generate_link.outputs.address }}"
           tool="${{ github.event.inputs.tool }}"
           maps_link="${{ steps.generate_link.outputs.maps_link }}"
 
-          issue_data=$(jq -n \
-            --arg summary "Address Task: $address" \
-            --argjson description '{
-              "type": "doc",
-              "version": 1,
-              "content": [
-                {
-                  "type": "paragraph",
-                  "content": [
-                    { "type": "text", "text": "Tool: " },
-                    { "type": "text", "text": "'"$tool"'", "marks": [{ "type": "strong" }] }
-                  ]
-                },
-                {
-                  "type": "paragraph",
-                  "content": [
-                    { "type": "text", "text": "Google Maps link: " },
-                    { "type": "text", "text": "'"$maps_link"'", "marks": [{ "type": "link", "attrs": { "href": "'"$maps_link"'" } }] }
-                  ]
-                }
-              ]
-            }' \
-            '{
-              fields: {
-                project: { key: "SBDRF" },
-                summary: $summary,
-                description: $description,
-                issuetype: { name: "Task" }
-              }
-            }')
+          issue_data=$(cat <<EOF
+          {
+            "fields": {
+              "project": { "key": "SBDRF" },
+              "summary": "Address Task: $address",
+              "description": {
+                "type": "doc",
+                "version": 1,
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      { "type": "text", "text": "Tool: " },
+                      { "type": "text", "text": "$tool", "marks": [{ "type": "strong" }] }
+                    ]
+                  },
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      { "type": "text", "text": "Google Maps link: " },
+                      { "type": "text", "text": "$maps_link", "marks": [{ "type": "link", "attrs": { "href": "$maps_link" } }] }
+                    ]
+                  }
+                ]
+              },
+              "issuetype": { "name": "Task" }
+            }
+          }
+EOF
+          )
 
           curl -X POST \
             --url "$JIRA_BASE_URL/rest/api/3/issue" \
             --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
             --header 'Content-Type: application/json' \
             --data "$issue_data"
-
