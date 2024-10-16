@@ -8,36 +8,14 @@ on:
         description: "Enter the address to generate the Google Maps link"
         required: true
 
-permissions:
-  issues: write
-
 jobs:
   generate-link:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Use Ubuntu runner
 
     steps:
-      - name: Encode Address and Create Google Maps Link
-        id: generate
+      - name: Generate Google Maps Link
         run: |
-          ENCODED_ADDRESS=$(echo "${{ github.event.inputs.address }}" | jq -sRr @uri)
-          echo "::set-output name=maps_link::https://www.google.com/maps/search/?api=1&query=${ENCODED_ADDRESS}"
-
-      - name: Display Google Maps Link in Logs
-        run: |
-          echo "::notice::Here is the Google Maps link: ${{ steps.generate.outputs.maps_link }}"
-
-      - name: Post Link as Issue Comment
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const issue_number = context.issue.number || 1;
-            const mapsLink = `${{ steps.generate.outputs.maps_link }}`;
-
-            await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number,
-              body: `Here is your Google Maps link: [Click Here](${mapsLink})`
-            });
+          address="${{ github.event.inputs.address }}"
+          encoded_address=$(echo "$address" | jq -sRr @uri)
+          maps_link="https://www.google.com/maps/search/?api=1&query=$encoded_address"
+          echo "Here is your Google Maps link: $maps_link"
