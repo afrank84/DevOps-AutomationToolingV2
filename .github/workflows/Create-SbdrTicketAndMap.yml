@@ -1,0 +1,59 @@
+# .github/workflows/create-google-maps-link.yml
+name: Create Google Maps Link and Jira Ticket
+
+on:
+  workflow_dispatch:
+    inputs:
+      address:
+        description: "Enter the address to generate the Google Maps link"
+        required: true
+      tool:
+        description: "Select the tool for the task"
+        required: true
+        type: choice
+        options:
+          - Chainsaw
+          - Mud-Out
+
+jobs:
+  generate-link:
+    runs-on: ubuntu-latest  # Use Ubuntu runner
+
+    steps:
+      - name: Generate Google Maps Link
+        id: generate_link
+        run: |
+          address="${{ github.event.inputs.address }}"
+          tool="${{ github.event.inputs.tool }}"
+          encoded_address=$(echo "$address" | jq -sRr @uri)
+          maps_link="https://www.google.com/maps/search/?api=1&query=$encoded_address"
+          echo "Generated Google Maps link: $maps_link"
+          echo "::set-output name=maps_link::$maps_link"
+
+      - name: Create Jira Ticket
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_PERSONAL_BASE_URL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_PERSONAL_API_TOKEN }}
+          JIRA_EMAIL: ${{ secrets.JIRA_PERSONAL_EMAIL }}
+        run: |
+          address="${{ github.event.inputs.address }}"
+          tool="${{ github.event.inputs.tool }}"
+          maps_link="${{ steps.generate_link.outputs.maps_link }}"
+
+          issue_data=$(jq -n \
+            --arg summary "Address Task: $address" \
+            --arg description "Tool: $tool\n\nGoogle Maps link: [$maps_link]($maps_link)" \
+            '{
+              fields: {
+                project: { key: "SBDRF" },
+                summary: $summary,
+                description: $description,
+                issuetype: { name: "Chainsaw" }
+              }
+            }')
+
+          curl -X POST \
+            --url "$JIRA_BASE_URL/rest/api/3/issue" \
+            --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data "$issue_data"
