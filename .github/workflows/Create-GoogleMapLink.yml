@@ -24,15 +24,15 @@ jobs:
           echo "::notice::Here is the Google Maps link: ${{ steps.generate.outputs.maps_link }}"
 
       - name: Post Link as Issue Comment
-        if: github.event.inputs.address != ''
         uses: actions/github-script@v6
         with:
           script: |
-            const { owner, repo } = context.repo;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
             const issue_number = context.issue.number || 1;
-            const mapsLink = '${{ steps.generate.outputs.maps_link }}';
+            const mapsLink = `${{ steps.generate.outputs.maps_link }}`;
 
-            await github.rest.issues.createComment({
+            github.rest.issues.createComment({
               owner,
               repo,
               issue_number,
