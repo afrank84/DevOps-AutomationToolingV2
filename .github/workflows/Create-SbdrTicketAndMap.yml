@@ -40,40 +40,33 @@ jobs:
           address="${{ steps.generate_link.outputs.address }}"
           tool="${{ github.event.inputs.tool }}"
           maps_link="${{ steps.generate_link.outputs.maps_link }}"
-
+        
           issue_data=$(jq -n \
             --arg summary "Address Task: $address" \
-            --argjson description '{
-              "type": "doc",
-              "version": 1,
-              "content": [
-                {
-                  "type": "paragraph",
-                  "content": [
-                    { "type": "text", "text": "Tool: " },
-                    { "type": "text", "text": "'"$tool"'", "marks": [{ "type": "strong" }] }
-                  ]
-                },
-                {
-                  "type": "paragraph",
-                  "content": [
-                    { "type": "text", "text": "Google Maps link: " },
-                    { "type": "text", "text": "'"$maps_link"'", "marks": [{ "type": "link", "attrs": { "href": "'"$maps_link"'" } }] }
-                  ]
-                }
-              ]
-            }' \
+            --arg description "Tool: $tool\n\nGoogle Maps link: [$maps_link]($maps_link)" \
             '{
               fields: {
                 project: { key: "SBDRF" },
                 summary: $summary,
-                description: $description,
-                issuetype: { name: "Task" }
+                description: {
+                  "type": "doc",
+                  "version": 1,
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": $description }
+                      ]
+                    }
+                  ]
+                },
+                issuetype: { name: "Chainsaw" }
               }
             }')
-
+        
           curl -X POST \
             --url "$JIRA_BASE_URL/rest/api/3/issue" \
             --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
             --header 'Content-Type: application/json' \
             --data "$issue_data"
+
