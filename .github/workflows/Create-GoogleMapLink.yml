@@ -8,6 +8,9 @@ on:
         description: "Enter the address to generate the Google Maps link"
         required: true
 
+permissions:
+  issues: write
+
 jobs:
   generate-link:
     runs-on: ubuntu-latest
@@ -32,7 +35,7 @@ jobs:
             const issue_number = context.issue.number || 1;
             const mapsLink = `${{ steps.generate.outputs.maps_link }}`;
 
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               owner,
               repo,
               issue_number,
