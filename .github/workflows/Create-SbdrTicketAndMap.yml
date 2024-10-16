@@ -1,5 +1,5 @@
 # .github/workflows/create-google-maps-link.yml
-name: Create Google Maps Link and Jira Ticket
+name: Create SBDR Jira Ticket with Map Link
 
 on:
   workflow_dispatch:
@@ -42,13 +42,32 @@ jobs:
 
           issue_data=$(jq -n \
             --arg summary "Address Task: $address" \
-            --arg description "Tool: $tool\n\nGoogle Maps link: [$maps_link]($maps_link)" \
+            --argjson description '{
+              "type": "doc",
+              "version": 1,
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    { "type": "text", "text": "Tool: " },
+                    { "type": "text", "text": "'"$tool"'", "marks": [{ "type": "strong" }] }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "content": [
+                    { "type": "text", "text": "Google Maps link: " },
+                    { "type": "text", "text": "'"$maps_link"'", "marks": [{ "type": "link", "attrs": { "href": "'"$maps_link"'" } }] }
+                  ]
+                }
+              ]
+            }' \
             '{
               fields: {
                 project: { key: "SBDRF" },
                 summary: $summary,
                 description: $description,
-                issuetype: { name: "Chainsaw" }
+                issuetype: { name: "Task" }
               }
             }')
 
@@ -57,3 +76,4 @@ jobs:
             --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
             --header 'Content-Type: application/json' \
             --data "$issue_data"
+
