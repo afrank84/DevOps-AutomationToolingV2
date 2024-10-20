@@ -60,7 +60,7 @@ jobs:
                 project: { key: "SBDRF" },
                 summary: $summary,
                 description: $description,
-                issuetype: { name: "Chainsaw" }
+                issuetype: { name: "Work Order" }
               }
             }')
 
