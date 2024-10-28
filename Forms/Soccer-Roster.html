@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soccer Player Attendance Tracker</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .table-container {
+            margin: 20px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        .attendance-header {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="attendance-header">
+            <h2 class="text-center">Soccer Team Attendance Tracker</h2>
+        </div>
+        <div class="table-container">
+            <div class="row mb-3">
+                <div class="col">
+                    <button class="btn btn-primary" onclick="addPlayer()">Add Player</button>
+                    <button class="btn btn-success" onclick="saveData()">Save Data</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Player Name</th>
+                            <th>Game Date</th>
+                            <th>Present</th>
+                            <th>Absent</th>
+                            <th>Late</th>
+                            <th>Devotional</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playerTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function addPlayer() {
+            const tbody = document.getElementById('playerTableBody');
+            const row = document.createElement('tr');
+            const today = new Date().toISOString().split('T')[0];
+            
+            row.innerHTML = `
+                <td><input type="text" class="form-control" placeholder="Enter player name"></td>
+                <td><input type="date" class="form-control" value="${today}"></td>
+                <td>
+                    <div class="form-check d-flex justify-content-center">
+                        <input type="radio" class="form-check-input" name="status_${tbody.children.length}" checked>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-check d-flex justify-content-center">
+                        <input type="radio" class="form-check-input" name="status_${tbody.children.length}">
+                    </div>
+                </td>
+                <td>
+                    <div class="form-check d-flex justify-content-center">
+                        <input type="radio" class="form-check-input" name="status_${tbody.children.length}">
+                    </div>
+                </td>
+                <td>
+                    <div class="form-check d-flex justify-content-center">
+                        <input type="checkbox" class="form-check-input">
+                    </div>
+                </td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function deleteRow(btn) {
+            btn.closest('tr').remove();
+        }
+
+        function saveData() {
+            const rows = document.querySelectorAll('#playerTableBody tr');
+            const data = [];
+            
+            rows.forEach(row => {
+                const cells = row.cells;
+                data.push({
+                    name: cells[0].querySelector('input').value,
+                    date: cells[1].querySelector('input').value,
+                    present: cells[2].querySelector('input').checked,
+                    absent: cells[3].querySelector('input').checked,
+                    late: cells[4].querySelector('input').checked,
+                    devotional: cells[5].querySelector('input').checked
+                });
+            });
+
+            // Save to localStorage for persistence
+            localStorage.setItem('soccerAttendance', JSON.stringify(data));
+            alert('Data saved successfully!');
+        }
+
+        // Load saved data when page loads
+        window.onload = function() {
+            const savedData = localStorage.getItem('soccerAttendance');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                data.forEach(player => {
+                    const tbody = document.getElementById('playerTableBody');
+                    const row = document.createElement('tr');
+                    const rowIndex = tbody.children.length;
+                    
+                    row.innerHTML = `
+                        <td><input type="text" class="form-control" value="${player.name}"></td>
+                        <td><input type="date" class="form-control" value="${player.date}"></td>
+                        <td>
+                            <div class="form-check d-flex justify-content-center">
+                                <input type="radio" class="form-check-input" name="status_${rowIndex}" ${player.present ? 'checked' : ''}>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-check d-flex justify-content-center">
+                                <input type="radio" class="form-check-input" name="status_${rowIndex}" ${player.absent ? 'checked' : ''}>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-check d-flex justify-content-center">
+                                <input type="radio" class="form-check-input" name="status_${rowIndex}" ${player.late ? 'checked' : ''}>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-check d-flex justify-content-center">
+                                <input type="checkbox" class="form-check-input" ${player.devotional ? 'checked' : ''}>
+                            </div>
+                        </td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
