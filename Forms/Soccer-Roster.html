@@ -18,6 +18,9 @@
             margin-bottom: 20px;
             border-radius: 5px;
         }
+        .number-input {
+            width: 70px;
+        }
     </style>
 </head>
 <body>
@@ -42,6 +45,7 @@
                             <th>Absent</th>
                             <th>Late</th>
                             <th>Devotional</th>
+                            <th>Sat Out (1-4)</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -54,6 +58,13 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script>
+        function validateSatOut(input) {
+            let value = parseInt(input.value);
+            if (value < 1) input.value = 1;
+            if (value > 4) input.value = 4;
+            if (isNaN(value)) input.value = "";
+        }
+
         function addPlayer() {
             const tbody = document.getElementById('playerTableBody');
             const row = document.createElement('tr');
@@ -83,6 +94,9 @@
                     </div>
                 </td>
                 <td>
+                    <input type="number" class="form-control number-input mx-auto" min="1" max="4" onchange="validateSatOut(this)">
+                </td>
+                <td>
                     <button class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button>
                 </td>
             `;
@@ -105,16 +119,15 @@
                     present: cells[2].querySelector('input').checked,
                     absent: cells[3].querySelector('input').checked,
                     late: cells[4].querySelector('input').checked,
-                    devotional: cells[5].querySelector('input').checked
+                    devotional: cells[5].querySelector('input').checked,
+                    satOut: cells[6].querySelector('input').value
                 });
             });
 
-            // Save to localStorage for persistence
             localStorage.setItem('soccerAttendance', JSON.stringify(data));
             alert('Data saved successfully!');
         }
 
-        // Load saved data when page loads
         window.onload = function() {
             const savedData = localStorage.getItem('soccerAttendance');
             if (savedData) {
@@ -146,6 +159,9 @@
                             <div class="form-check d-flex justify-content-center">
                                 <input type="checkbox" class="form-check-input" ${player.devotional ? 'checked' : ''}>
                             </div>
+                        </td>
+                        <td>
+                            <input type="number" class="form-control number-input mx-auto" min="1" max="4" value="${player.satOut}" onchange="validateSatOut(this)">
                         </td>
                         <td>
                             <button class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button>
