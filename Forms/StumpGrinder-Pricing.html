@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stump Grinding Price Calculator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .result-box {
+            border-left: 4px solid #198754;
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            display: none;
+        }
+        .form-label {
+            font-weight: 500;
+        }
+        .breakdown-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .breakdown-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="card-title mb-0">Stump Grinding Price Calculator</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="stumpForm">
+                            <div class="row">
+                                <!-- Basic Stump Information -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="stumpDiameter" class="form-label">Stump Diameter (inches)</label>
+                                    <input type="number" class="form-control" id="stumpDiameter" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="numberOfStumps" class="form-label">Number of Stumps</label>
+                                    <input type="number" class="form-control" id="numberOfStumps" required>
+                                </div>
+                                
+                                <!-- Pricing Information -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="pricePerInch" class="form-label">Price per Inch ($)</label>
+                                    <input type="number" class="form-control" id="pricePerInch" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="maintenanceCost" class="form-label">Maintenance Cost per Stump ($)</label>
+                                    <input type="number" class="form-control" id="maintenanceCost" value="5">
+                                </div>
+
+                                <!-- Travel & Fuel Information -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="distance" class="form-label">Round Trip Distance (miles)</label>
+                                    <input type="number" class="form-control" id="distance" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="fuelPrice" class="form-label">Fuel Price per Gallon ($)</label>
+                                    <input type="number" class="form-control" id="fuelPrice" step="0.01" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="mpg" class="form-label">Vehicle MPG</label>
+                                    <input type="number" class="form-control" id="mpg" value="13">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="travelCostPerMile" class="form-label">Travel Cost per Mile ($)</label>
+                                    <input type="number" class="form-control" id="travelCostPerMile" value="0.50" step="0.01">
+                                </div>
+
+                                <!-- Discount Information -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="bulkDiscount" class="form-label">Bulk Discount per Additional Stump (%)</label>
+                                    <input type="number" class="form-control" id="bulkDiscount" value="5">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success w-100 mt-3">Calculate Price</button>
+                        </form>
+
+                        <div id="resultBox" class="result-box">
+                            <h4 class="mb-4">Price Breakdown</h4>
+                            <div class="breakdown-item d-flex justify-content-between">
+                                <span>Base Grinding Cost:</span>
+                                <span id="baseGrindingCost" class="fw-bold">-</span>
+                            </div>
+                            <div class="breakdown-item d-flex justify-content-between">
+                                <span>Travel Cost:</span>
+                                <span id="travelCost" class="fw-bold">-</span>
+                            </div>
+                            <div class="breakdown-item d-flex justify-content-between">
+                                <span>Fuel Cost:</span>
+                                <span id="fuelCost" class="fw-bold">-</span>
+                            </div>
+                            <div class="breakdown-item d-flex justify-content-between">
+                                <span>Maintenance Cost:</span>
+                                <span id="totalMaintenanceCost" class="fw-bold">-</span>
+                            </div>
+                            <div class="breakdown-item d-flex justify-content-between text-danger">
+                                <span>Bulk Discount:</span>
+                                <span id="totalDiscount" class="fw-bold">-</span>
+                            </div>
+                            <div class="mt-4 pt-3 border-top">
+                                <h3 class="d-flex justify-content-between">
+                                    <span>Total Price:</span>
+                                    <span id="totalCost" class="text-success">-</span>
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('stumpForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get all input values
+            const stumpDiameter = parseFloat(document.getElementById('stumpDiameter').value);
+            const numberOfStumps = parseInt(document.getElementById('numberOfStumps').value);
+            const pricePerInch = parseFloat(document.getElementById('pricePerInch').value);
+            const distance = parseFloat(document.getElementById('distance').value);
+            const fuelPrice = parseFloat(document.getElementById('fuelPrice').value);
+            const mpg = parseFloat(document.getElementById('mpg').value);
+            const maintenanceCost = parseFloat(document.getElementById('maintenanceCost').value);
+            const bulkDiscount = parseFloat(document.getElementById('bulkDiscount').value);
+            const travelCostPerMile = parseFloat(document.getElementById('travelCostPerMile').value);
+
+            // Calculate base grinding cost
+            const costPerStump = stumpDiameter * pricePerInch;
+            const baseGrindingCost = costPerStump * numberOfStumps;
+
+            // Calculate travel cost
+            const travelCost = distance * travelCostPerMile;
+
+            // Calculate fuel cost
+            const fuelCost = (distance / mpg) * fuelPrice;
+
+            // Calculate maintenance cost
+            const totalMaintenanceCost = maintenanceCost * numberOfStumps;
+
+            // Calculate bulk discount
+            const discountAmount = numberOfStumps > 1 ? 
+                (costPerStump * (bulkDiscount/100)) * (numberOfStumps - 1) : 0;
+
+            // Calculate total cost
+            const totalCost = baseGrindingCost + travelCost + fuelCost + totalMaintenanceCost - discountAmount;
+
+            // Display results
+            document.getElementById('baseGrindingCost').textContent = `$${baseGrindingCost.toFixed(2)}`;
+            document.getElementById('travelCost').textContent = `$${travelCost.toFixed(2)}`;
+            document.getElementById('fuelCost').textContent = `$${fuelCost.toFixed(2)}`;
+            document.getElementById('totalMaintenanceCost').textContent = `$${totalMaintenanceCost.toFixed(2)}`;
+            document.getElementById('totalDiscount').textContent = `-$${discountAmount.toFixed(2)}`;
+            document.getElementById('totalCost').textContent = `$${totalCost.toFixed(2)}`;
+            
+            // Show results
+            document.getElementById('resultBox').style.display = 'block';
+        });
+    </script>
+</body>
+</html>
