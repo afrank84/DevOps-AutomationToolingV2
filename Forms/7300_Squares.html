@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1a1a1a;
+        }
+
+        #container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+            gap: 4px;
+            max-width: 1200px;
+            padding: 20px;
+        }
+
+        .box {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #333;
+            background-color: #222;
+            border-radius: 4px;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .box.filled {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .box:hover {
+            background-color: #60a5fa;
+            transform: scale(1.1);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+
+    <script>
+        const container = document.getElementById('container');
+        const totalBoxes = 7300;
+        
+        // Create boxes for each day
+        for (let i = 1; i <= totalBoxes; i++) {
+            const box = document.createElement('div');
+            box.className = 'box';
+            box.textContent = i; // Add day number
+            
+            // Make it clickable to toggle filled state
+            box.addEventListener('click', () => {
+                box.classList.toggle('filled');
+            });
+            
+            container.appendChild(box);
+        }
+    </script>
+</body>
+</html>
