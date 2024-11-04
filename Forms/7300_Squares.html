@@ -4,20 +4,38 @@
     <style>
         body {
             margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            padding: 20px;
             background: #1a1a1a;
+        }
+
+        .grid-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .row-labels {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            color: #666;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            width: 30px;
+        }
+
+        .row-label {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
         }
 
         #container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+            grid-template-columns: repeat(365, 40px);
             gap: 4px;
-            max-width: 1200px;
-            padding: 20px;
+            overflow-x: auto;
         }
 
         .box {
@@ -49,19 +67,34 @@
     </style>
 </head>
 <body>
-    <div id="container"></div>
+    <div class="grid-wrapper">
+        <div class="row-labels">
+            <!-- Row labels will be added here by JavaScript -->
+        </div>
+        <div id="container"></div>
+    </div>
 
     <script>
         const container = document.getElementById('container');
+        const rowLabels = document.querySelector('.row-labels');
         const totalBoxes = 7300;
+        const daysPerYear = 365;
+        const totalYears = totalBoxes / daysPerYear;
+        
+        // Create simple row numbers
+        for (let row = 1; row <= totalYears; row++) {
+            const label = document.createElement('div');
+            label.className = 'row-label';
+            label.textContent = row;
+            rowLabels.appendChild(label);
+        }
         
         // Create boxes for each day
         for (let i = 1; i <= totalBoxes; i++) {
             const box = document.createElement('div');
             box.className = 'box';
-            box.textContent = i; // Add day number
+            box.textContent = i;
             
-            // Make it clickable to toggle filled state
             box.addEventListener('click', () => {
                 box.classList.toggle('filled');
             });
