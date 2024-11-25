@@ -1,0 +1,1 @@
+wmic qfe list full
