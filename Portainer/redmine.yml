@@ -1,0 +1,39 @@
+services: #Synology NAS
+  db:
+    image: mariadb:11.4-noble #LTS Long Time Support Until May 29, 2029.
+    container_name: Redmine-DB
+    hostname: redmine-db
+    security_opt:
+      - no-new-privileges:false
+    environment:
+      - TZ=America/New_York
+      - MYSQL_ROOT_PASSWORD=superstrangepass
+      - MYSQL_DATABASE=redmine
+      - MYSQL_USER=redmineuser
+      - MYSQL_PASSWORD=redminepass
+    volumes:
+      - /volume1/docker/redmine/db:/var/lib/mysql:rw
+    restart: on-failure:5
+
+  redmine:
+    image: redmine:latest
+    container_name: Redmine
+    hostname: redmine
+    security_opt:
+      - no-new-privileges:false
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+    user: 1027:100
+    environment:
+      REDMINE_DB_MYSQL: redmine-db
+      REDMINE_DB_DATABASE: redmine
+      REDMINE_DB_USERNAME: redmineuser
+      REDMINE_DB_PASSWORD: redminepass
+    volumes:
+      - /volume1/docker/redmine/data:/usr/src/redmine/files:rw
+    ports:
+      - 3434:3000
+    restart: on-failure:5
+    depends_on:
+      db:
+        condition: service_started
