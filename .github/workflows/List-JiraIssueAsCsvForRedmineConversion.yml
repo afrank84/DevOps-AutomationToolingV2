@@ -1,4 +1,4 @@
-name: Export Jira Issues to CSV for Redmine Conversion
+name: Export Jira Issues to CSV
 
 on:
   workflow_dispatch:  # Allows manual triggering of the workflow
@@ -31,7 +31,7 @@ jobs:
 
         # HTTP Headers
         $headers = @{
-            Authorization = "Basic " + [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("$JiraUsername:$JiraApiToken"))
+            Authorization = "Basic " + [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("${JiraUsername}:${JiraApiToken}"))
             Accept        = "application/json"
         }
 
