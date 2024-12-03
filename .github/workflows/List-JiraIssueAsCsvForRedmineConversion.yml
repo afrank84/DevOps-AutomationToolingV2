@@ -1,0 +1,63 @@
+name: Export Jira Issues to CSV for Redmine Conversion
+
+on:
+  workflow_dispatch:  # Allows manual triggering of the workflow
+    inputs:
+      jira_key:
+        description: 'Jira Project Key'
+        required: true
+
+jobs:
+  export-issues:
+    runs-on: windows-latest
+
+    steps:
+    - name: Export Jira Issues to CSV
+      shell: pwsh
+      env:
+        JIRA_URL: ${{ secrets.JIRA_PERSONAL_BASE_URL }}
+        JIRA_USERNAME: ${{ secrets.JIRA_PERSONAL_EMAIL }}
+        JIRA_API: ${{ secrets.JIRA_PERSONAL_API_TOKEN }}
+      run: |
+        $jiraKey = '${{ github.event.inputs.jira_key }}'
+
+        # Jira API Details
+        $JiraUrl = $env:JIRA_URL
+        $JiraUsername = $env:JIRA_USERNAME
+        $JiraApiToken = $env:JIRA_API
+
+        # Jira Query URL
+        $JiraQueryUrl = "$JiraUrl/rest/api/2/search?jql=project=$jiraKey"
+
+        # HTTP Headers
+        $headers = @{
+            Authorization = "Basic " + [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("$JiraUsername:$JiraApiToken"))
+            Accept        = "application/json"
+        }
+
+        # Send API Request
+        $response = Invoke-RestMethod -Uri $JiraQueryUrl -Headers $headers -Method Get
+        $issues = $response.issues
+
+        if (-not $issues) {
+            Write-Output "No issues found for project key $jiraKey."
+            exit 0
+        }
+
+        # Transform Issues into CSV Format
+        $csvData = $issues | ForEach-Object {
+            [PSCustomObject]@{
+                Key         = $_.key
+                Summary     = $_.fields.summary
+                Description = $_.fields.description -replace '\r?\n', ' ' # Remove line breaks
+                Status      = $_.fields.status.name
+                Priority    = $_.fields.priority.name
+                Assignee    = if ($_.fields.assignee) { $_.fields.assignee.displayName } else { "Unassigned" }
+                Created     = $_.fields.created
+                DueDate     = if ($_.fields.duedate) { $_.fields.duedate } else { "None" }
+            }
+        }
+
+        # Output CSV to Logs
+        Write-Output "CSV Output:"
+        $csvData | ConvertTo-Csv -NoTypeInformation | ForEach-Object { Write-Output $_ }
