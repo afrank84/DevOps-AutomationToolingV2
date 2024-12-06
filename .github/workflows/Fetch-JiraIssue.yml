@@ -30,4 +30,6 @@ jobs:
             "${JIRA_BASE_URL}/rest/api/3/issue/${ISSUE_KEY}")
 
           echo "Response: $RESPONSE"
-          echo "::set-output name=jira_response::$RESPONSE"
+
+          # Use environment file to set the output
+          echo "jira_response=$RESPONSE" >> $GITHUB_ENV
