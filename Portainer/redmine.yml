@@ -30,7 +30,9 @@ services: #Synology NAS
       REDMINE_DB_USERNAME: redmineuser
       REDMINE_DB_PASSWORD: redminepass
     volumes:
-      - /volume1/docker/redmine/data:/usr/src/redmine/files:rw
+        - /volume1/docker/redmine/data:/usr/src/redmine/files
+        - /volume1/docker/redmine/assets:/usr/src/redmine/public/assets
+        - /volume1/docker/redmine/themes:/usr/src/redmine/themes
     ports:
       - 3434:3000
     restart: on-failure:5
