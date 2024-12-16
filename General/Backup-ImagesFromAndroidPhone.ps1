@@ -1,33 +1,64 @@
-# Define the source and destination directories
-$SourceDir = "E:\DCIM\Camera"    # Change this to the directory on your Android phone
-$DestDir = "D:\00-SamsungBackup\Images\Camera" # Change this to your desired destination directory on the PC
-$LogFile = "D:\00-SamsungBackup\transfer_log.txt" # Log file to track successes
-$FailedLogFile = "D:\00-SamsungBackup\failed_files_log.txt" # Log file to track failures
+# Define source, destination, and log files
+$SourceDir = "E:\DCIM\Camera"
+$DestDir = "D:\00-SamsungBackup\Images\Camera"
+$LogFile = "D:\00-SamsungBackup\transfer_log.txt"
+$FailedLogFile = "D:\00-SamsungBackup\failed_files_log.txt"
 
-# Create the destination directory if it doesn't exist
-if (-not (Test-Path $DestDir)) {
-    New-Item -ItemType Directory -Path $DestDir | Out-Null
+# Preload processed files
+$ProcessedFiles = @{}
+if (Test-Path $LogFile) {
+    $ProcessedFiles += Get-Content $LogFile | ForEach-Object { ($_ -split ',')[0] }
+}
+if (Test-Path $FailedLogFile) {
+    $ProcessedFiles += Get-Content $FailedLogFile | ForEach-Object { ($_ -split ',')[0] }
 }
 
-# Process files in the source directory
-Get-ChildItem -Path $SourceDir -File | ForEach-Object {
-    $File = $_
-
-    # Check if the file is already logged as processed
-    if (Select-String -Path $LogFile, $FailedLogFile -SimpleMatch $File.FullName) {
-        Write-Host "SKIPPED: $($File.Name) (Already processed)" -ForegroundColor Yellow
-        return
-    }
-
+# Function to safely copy a file with timeout simulation
+function Safe-Copy {
+    param (
+        [string]$SourceFile,
+        [string]$DestinationDir
+    )
+    $StartTime = [DateTime]::Now
     try {
-        # Attempt to copy the file
-        Copy-Item -Path $File.FullName -Destination $DestDir -ErrorAction Stop
-        # Log success
-        Write-Host "SUCCESS: $($File.Name)" -ForegroundColor Green
-        "$($File.FullName),Success" | Out-File -Append -FilePath $LogFile
+        Copy-Item -Path $SourceFile -Destination $DestinationDir -ErrorAction Stop
+        return $true
     } catch {
-        # Log failure
-        Write-Host "FAIL: $($File.Name)" -ForegroundColor Red
-        "$($File.FullName),Fail" | Out-File -Append -FilePath $FailedLogFile
+        # Log the error message (optional for debugging)
+        Write-Host "Error copying file: $_" -ForegroundColor Yellow
+        return $false
+    } finally {
+        # Check for timeout (simulate timeout check)
+        $ElapsedTime = ([DateTime]::Now - $StartTime).TotalSeconds
+        if ($ElapsedTime -ge 10) { # Adjust timeout as needed
+            Write-Host "Timeout reached for file: $SourceFile" -ForegroundColor Red
+        }
     }
+}
+
+# Process files in batches, with Ctrl+C support
+try {
+    Get-ChildItem -Path $SourceDir -File | ForEach-Object {
+        $File = $_
+
+        # Skip already processed files
+        if ($File.FullName -in $ProcessedFiles) {
+            Write-Host "SKIPPED: $($File.Name) (Already processed)" -ForegroundColor Yellow
+            return
+        }
+
+        # Attempt to copy the file
+        $Success = Safe-Copy -SourceFile $File.FullName -DestinationDir $DestDir
+        if ($Success) {
+            Write-Host "SUCCESS: $($File.Name)" -ForegroundColor Green
+            "$($File.FullName),Success" | Out-File -Append -FilePath $LogFile
+        } else {
+            Write-Host "FAIL: $($File.Name)" -ForegroundColor Red
+            "$($File.FullName),Fail" | Out-File -Append -FilePath $FailedLogFile
+        }
+    }
+} catch {
+    Write-Host "Script interrupted by user." -ForegroundColor Yellow
+} finally {
+    Write-Host "Script terminated." -ForegroundColor Cyan
 }
