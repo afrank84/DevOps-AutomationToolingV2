@@ -57,6 +57,8 @@ function Safe-Copy {
 try {
     Get-ChildItem -Path $SourceDir -File | ForEach-Object {
         $File = $_
+        $timestamp = Get-Date
+        Write-Output $timestamp
 
         # Skip already processed files
         if ($ProcessedFiles.ContainsKey($File.FullName)) {
@@ -73,6 +75,8 @@ try {
             Write-Host "FAIL: $($File.Name)" -ForegroundColor Red
             "$($File.FullName),Fail" | Out-File -Append -FilePath $FailedLogFile
         }
+        # Add a manual delay
+        Start-Sleep -Seconds 2  # Adjust the duration as needed
     }
 } catch {
     Write-Host "Script interrupted by user." -ForegroundColor Yellow
