@@ -1,32 +1,22 @@
 # Define the source and destination directories
 $SourceDir = "E:\DCIM\Camera"    # Change this to the directory on your Android phone
 $DestDir = "D:\00-SamsungBackup\Images\Camera" # Change this to your desired destination directory on the PC
-$LogFile = "D:\00-SamsungBackup\transfer_log.txt" # Log file to track progress
-$FailedLogFile = "D:\00-SamsungBackup\failed_files_log.txt" # Log file for failed files
+$LogFile = "D:\00-SamsungBackup\transfer_log.txt" # Log file to track successes
+$FailedLogFile = "D:\00-SamsungBackup\failed_files_log.txt" # Log file to track failures
 
 # Create the destination directory if it doesn't exist
 if (-not (Test-Path $DestDir)) {
     New-Item -ItemType Directory -Path $DestDir | Out-Null
 }
 
-# Read already processed files into memory (both successes and failures)
-$ProcessedFiles = @{}
-if (Test-Path $LogFile) {
-    $ProcessedFiles += Get-Content $LogFile | ForEach-Object { ($_ -split ',')[0] }
-}
-if (Test-Path $FailedLogFile) {
-    $ProcessedFiles += Get-Content $FailedLogFile | ForEach-Object { ($_ -split ',')[0] }
-}
+# Process files in the source directory
+Get-ChildItem -Path $SourceDir -File | ForEach-Object {
+    $File = $_
 
-# Initialize file enumerator
-$FileEnumerator = (Get-ChildItem -Path $SourceDir -File -Recurse).GetEnumerator()
-
-# Process files one by one
-while ($FileEnumerator.MoveNext()) {
-    $File = $FileEnumerator.Current
-    # Skip files that are already processed
-    if ($File.FullName -in $ProcessedFiles) {
-        continue
+    # Check if the file is already logged as processed
+    if (Select-String -Path $LogFile, $FailedLogFile -SimpleMatch $File.FullName) {
+        Write-Host "SKIPPED: $($File.Name) (Already processed)" -ForegroundColor Yellow
+        return
     }
 
     try {
@@ -34,10 +24,10 @@ while ($FileEnumerator.MoveNext()) {
         Copy-Item -Path $File.FullName -Destination $DestDir -ErrorAction Stop
         # Log success
         Write-Host "SUCCESS: $($File.Name)" -ForegroundColor Green
-        "$($File.FullName),Success" | Add-Content -Path $LogFile
+        "$($File.FullName),Success" | Out-File -Append -FilePath $LogFile
     } catch {
-        # Log failure and move on
+        # Log failure
         Write-Host "FAIL: $($File.Name)" -ForegroundColor Red
-        "$($File.FullName),Fail" | Add-Content -Path $FailedLogFile
+        "$($File.FullName),Fail" | Out-File -Append -FilePath $FailedLogFile
     }
 }
