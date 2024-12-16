@@ -19,7 +19,7 @@ if (Test-Path $FailedLogFile) {
 }
 
 # Initialize file enumerator
-$FileEnumerator = Get-ChildItem -Path $SourceDir -File -Recurse | GetEnumerator()
+$FileEnumerator = (Get-ChildItem -Path $SourceDir -File -Recurse).GetEnumerator()
 
 # Process files one by one
 while ($FileEnumerator.MoveNext()) {
