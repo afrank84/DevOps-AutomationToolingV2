@@ -4,6 +4,15 @@ $DestDir = "D:\00-SamsungBackup\Images\Camera"
 $LogFile = "D:\00-SamsungBackup\transfer_log.txt"
 $FailedLogFile = "D:\00-SamsungBackup\failed_files_log.txt"
 
+# Function to convert file size to a human-readable format
+function Format-FileSize {
+    param ([long]$Bytes)
+    if ($Bytes -ge 1GB) { return "{0:N2} GB" -f ($Bytes / 1GB) }
+    elseif ($Bytes -ge 1MB) { return "{0:N2} MB" -f ($Bytes / 1MB) }
+    elseif ($Bytes -ge 1KB) { return "{0:N2} KB" -f ($Bytes / 1KB) }
+    else { return "$Bytes Bytes" }
+}
+
 # Preload processed files
 $ProcessedFiles = @{}
 if (Test-Path $LogFile) {
@@ -13,30 +22,28 @@ if (Test-Path $FailedLogFile) {
     $ProcessedFiles += Get-Content $FailedLogFile | ForEach-Object { ($_ -split ',')[0] }
 }
 
-# Function to safely copy a file with timeout simulation
+# Function to safely copy a file with size display
 function Safe-Copy {
     param (
         [string]$SourceFile,
         [string]$DestinationDir
     )
     $StartTime = [DateTime]::Now
+    $FileSize = (Get-Item -Path $SourceFile).Length
+    $FormattedSize = Format-FileSize -Bytes $FileSize
+
+    Write-Host "Processing: $SourceFile ($FormattedSize)" -ForegroundColor Cyan
+
     try {
         Copy-Item -Path $SourceFile -Destination $DestinationDir -ErrorAction Stop
         return $true
     } catch {
-        # Log the error message (optional for debugging)
         Write-Host "Error copying file: $_" -ForegroundColor Yellow
         return $false
-    } finally {
-        # Check for timeout (simulate timeout check)
-        $ElapsedTime = ([DateTime]::Now - $StartTime).TotalSeconds
-        if ($ElapsedTime -ge 10) { # Adjust timeout as needed
-            Write-Host "Timeout reached for file: $SourceFile" -ForegroundColor Red
-        }
     }
 }
 
-# Process files in batches, with Ctrl+C support
+# Process files
 try {
     Get-ChildItem -Path $SourceDir -File | ForEach-Object {
         $File = $_
