@@ -13,13 +13,19 @@ function Format-FileSize {
     else { return "$Bytes Bytes" }
 }
 
-# Preload processed files
+# Preload processed files into a hash table
 $ProcessedFiles = @{}
 if (Test-Path $LogFile) {
-    $ProcessedFiles += Get-Content $LogFile | ForEach-Object { ($_ -split ',')[0] }
+    Get-Content $LogFile | ForEach-Object {
+        $FilePath = ($_ -split ',')[0]
+        $ProcessedFiles[$FilePath] = $true
+    }
 }
 if (Test-Path $FailedLogFile) {
-    $ProcessedFiles += Get-Content $FailedLogFile | ForEach-Object { ($_ -split ',')[0] }
+    Get-Content $FailedLogFile | ForEach-Object {
+        $FilePath = ($_ -split ',')[0]
+        $ProcessedFiles[$FilePath] = $true
+    }
 }
 
 # Function to safely copy a file with size display
@@ -49,7 +55,7 @@ try {
         $File = $_
 
         # Skip already processed files
-        if ($File.FullName -in $ProcessedFiles) {
+        if ($ProcessedFiles.ContainsKey($File.FullName)) {
             Write-Host "SKIPPED: $($File.Name) (Already processed)" -ForegroundColor Yellow
             return
         }
