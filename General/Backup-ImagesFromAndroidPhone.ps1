@@ -1,5 +1,5 @@
 # Define the source and destination directories
-$SourceDir = "This PC\Galaxy S20 FE 5G\SD card\DCIM\Camera"    # Change this to the directory on your Android phone
+$SourceDir = "E:\DCIM\Camera"    # Change this to the directory on your Android phone
 $DestDir = "D:\00-SamsungBackup\Images\Camera" # Change this to your desired destination directory on the PC
 $LogFile = "D:\00-SamsungBackup\transfer_log.txt" # Log file to track progress
 
