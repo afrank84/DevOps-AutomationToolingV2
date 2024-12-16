@@ -28,11 +28,12 @@ if (Test-Path $FailedLogFile) {
     }
 }
 
-# Function to safely copy a file with size display
+# Function to safely copy a file with size display and error logging
 function Safe-Copy {
     param (
         [string]$SourceFile,
-        [string]$DestinationDir
+        [string]$DestinationDir,
+        [string]$FailedLogFile
     )
     $StartTime = [DateTime]::Now
     $FileSize = (Get-Item -Path $SourceFile).Length
@@ -41,10 +42,13 @@ function Safe-Copy {
     Write-Host "Processing: $SourceFile ($FormattedSize)" -ForegroundColor Cyan
 
     try {
+        # Attempt to copy the file
         Copy-Item -Path $SourceFile -Destination $DestinationDir -ErrorAction Stop
         return $true
     } catch {
-        Write-Host "Error copying file: $_" -ForegroundColor Yellow
+        # Log the error and skip the file
+        Write-Host "Error copying file: $($_.Exception.Message)" -ForegroundColor Yellow
+        "$SourceFile,CRC Error" | Out-File -Append -FilePath $FailedLogFile
         return $false
     }
 }
