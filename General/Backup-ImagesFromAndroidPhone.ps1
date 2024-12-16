@@ -9,20 +9,26 @@ if (-not (Test-Path $DestDir)) {
     New-Item -ItemType Directory -Path $DestDir | Out-Null
 }
 
-# Load processed files from the log file if it exists
+# Read already processed files into memory (both successes and failures)
 $ProcessedFiles = @{}
 if (Test-Path $LogFile) {
-    $ProcessedFiles = Get-Content $LogFile | ForEach-Object {
-        $line = $_ -split ','
-        @{ Name = $line[0]; Status = $line[1] }
-    } | Group-Object Name | ForEach-Object { $_.Group[0] }
+    $ProcessedFiles += Get-Content $LogFile | ForEach-Object { ($_ -split ',')[0] }
+}
+if (Test-Path $FailedLogFile) {
+    $ProcessedFiles += Get-Content $FailedLogFile | ForEach-Object { ($_ -split ',')[0] }
 }
 
-# Get a list of files from the source directory
-$Files = Get-ChildItem -Path $SourceDir -File -Recurse | Where-Object { $_.FullName -notin $ProcessedFiles.Name }
+# Initialize file enumerator
+$FileEnumerator = Get-ChildItem -Path $SourceDir -File -Recurse | GetEnumerator()
 
-# Process each file
-foreach ($File in $Files) {
+# Process files one by one
+while ($FileEnumerator.MoveNext()) {
+    $File = $FileEnumerator.Current
+    # Skip files that are already processed
+    if ($File.FullName -in $ProcessedFiles) {
+        continue
+    }
+
     try {
         # Attempt to copy the file
         Copy-Item -Path $File.FullName -Destination $DestDir -ErrorAction Stop
