@@ -1,0 +1,29 @@
+name: Generate GitHub Sidebar Structure
+
+on:
+  workflow_dispatch: # Allows you to trigger this workflow manually
+
+jobs:
+  generate-sidebar:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Generate folder structure as Markdown
+      run: |
+        echo "Generating folder structure..."
+        find . -type d | sed 's|^\./||' | while read dir; do
+          echo "- **$dir**"
+          find "$dir" -maxdepth 1 -type f -name "*.md" | sed 's|^\./||' | while read file; do
+            name=$(basename "$file" .md)
+            path=$(echo "$file" | sed 's|^\./||')
+            echo "  - [$name]($path)"
+          done
+        done > sidebar.md
+
+    - name: Show sidebar
+      run: |
+        echo "### Sidebar.md Content ###"
+        cat sidebar.md
