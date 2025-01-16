@@ -18,13 +18,13 @@ function Collect-SystemInfo {
     $Accounts = Get-LocalUser | Select-Object Name, Enabled, LastLogon
 
     $SystemInfo = @"
-Hostname: $Hostname
-Computer Name: $ComputerName
-Windows Version: $WindowsVersion
-Serial Number: $SerialNumber
-
-User Accounts:
-@"
+    Hostname: $Hostname
+    Computer Name: $ComputerName
+    Windows Version: $WindowsVersion
+    Serial Number: $SerialNumber
+    
+    User Accounts:
+    @"
     $SystemInfo | Out-File -FilePath $SystemInfoFile -Encoding UTF8 -Append
 
     # Append user accounts information
