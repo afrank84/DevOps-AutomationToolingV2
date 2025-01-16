@@ -32,14 +32,17 @@ function Collect-SystemInfo {
     $SerialNumber = (Get-WmiObject -Class Win32_BIOS).SerialNumber
     $Accounts = Get-LocalUser | Select-Object Name, Enabled, LastLogon
 
-    $SystemInfo = @"
-    Hostname: $Hostname
-    Computer Name: $ComputerName
-    Windows Version: $WindowsVersion
-    Serial Number: $SerialNumber
-    
-    User Accounts:
-    @"
+    # Use an array to hold the lines of the system information
+    $SystemInfo = @(
+        "Hostname: $Hostname",
+        "Computer Name: $ComputerName",
+        "Windows Version: $WindowsVersion",
+        "Serial Number: $SerialNumber",
+        "",
+        "User Accounts:"
+    )
+
+    # Output system info to the file
     $SystemInfo | Out-File -FilePath $SystemInfoFile -Encoding UTF8 -Append
 
     # Append user accounts information
@@ -47,6 +50,7 @@ function Collect-SystemInfo {
 
     Write-Output "System information saved to $SystemInfoFile."
 }
+
 
 # Function to safely copy files and create subdirectories
 function Copy-IfExists {
