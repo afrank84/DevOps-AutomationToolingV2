@@ -1,5 +1,20 @@
-# Define the output directory for log collection
-$OutputDirectory = "C:\ForensicLogs"
+# Function to detect the USB drive
+function Get-UsbDriveLetter {
+    $UsbDrive = Get-WmiObject Win32_LogicalDisk | Where-Object { 
+        $_.DriveType -eq 2 -and $_.FileSystem -ne $null 
+    } | Select-Object -First 1
+
+    if ($UsbDrive) {
+        return $UsbDrive.DeviceID
+    } else {
+        Write-Output "No USB drive detected. Exiting script."
+        exit
+    }
+}
+
+# Define the output directory on the USB drive
+$UsbDrive = Get-UsbDriveLetter
+$OutputDirectory = Join-Path -Path $UsbDrive -ChildPath "ForensicLogs"
 
 # Create the output directory if it doesn't exist
 if (-not (Test-Path -Path $OutputDirectory)) {
