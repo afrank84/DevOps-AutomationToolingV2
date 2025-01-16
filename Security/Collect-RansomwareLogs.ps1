@@ -6,22 +6,7 @@ if (-not (Test-Path -Path $OutputDirectory)) {
     New-Item -ItemType Directory -Path $OutputDirectory
 }
 
-# Function to safely copy files and create subdirectories
-function Copy-IfExists {
-    param (
-        [string]$Source,
-        [string]$Destination
-    )
-    if (Test-Path -Path $Source) {
-        $SubDir = Split-Path -Path $Destination -Parent
-        if (-not (Test-Path -Path $SubDir)) {
-            New-Item -ItemType Directory -Path $SubDir
-        }
-        Copy-Item -Path $Source -Destination $Destination -Recurse -Force -ErrorAction SilentlyContinue
-    }
-}
-
-# Function to create shadow copy and copy locked files
+# Function to create a shadow copy and access locked files
 function Copy-LockedFiles {
     param (
         [string]$Source,
@@ -30,27 +15,9 @@ function Copy-LockedFiles {
 
     Write-Output "Creating shadow copy for: $Source"
 
-    # Create a temporary script for diskshadow
-    $DiskshadowScript = @"
-SET CONTEXT PERSISTENT NOWRITERS
-BEGIN BACKUP
-ADD VOLUME C: ALIAS MyShadowCopy
-CREATE
-END BACKUP
-LIST SHADOWS ALL
-"@
-    $ScriptPath = "$env:TEMP\diskshadow.txt"
-    $DiskshadowOutput = "$env:TEMP\diskshadow_output.txt"
-    $DiskshadowPath = "$env:TEMP\diskshadow_mount"
-
-    Set-Content -Path $ScriptPath -Value $DiskshadowScript
-
-    # Run diskshadow and capture the output
-    diskshadow /s $ScriptPath > $DiskshadowOutput
-
-    # Parse the shadow copy device name
-    $ShadowDevice = Select-String -Path $DiskshadowOutput -Pattern "Shadow Copy Volume Name:" | ForEach-Object {
-        $_ -match "Shadow Copy Volume Name:\s+(\\?\GLOBALROOT\\Device\\HarddiskVolumeShadowCopy\d+)"
+    # Create a shadow copy using vssadmin
+    $ShadowCopyOutput = vssadmin create shadow /for=C: 2>&1
+    $ShadowDevice = $ShadowCopyOutput -match "Shadow Copy Volume Name:\s+(\\?\GLOBALROOT\\Device\\HarddiskVolumeShadowCopy\d+)" | ForEach-Object {
         $Matches[1]
     }
 
@@ -59,25 +26,24 @@ LIST SHADOWS ALL
         return
     }
 
-    # Mount shadow copy
-    $MountedPath = "$DiskshadowPath\ShadowCopy"
-    if (-not (Test-Path -Path $MountedPath)) {
-        New-Item -ItemType Directory -Path $MountedPath
-    }
-    subst Z: $ShadowDevice
+    # Mount the shadow copy
+    $MountedPath = "Z:"
+    subst $MountedPath $ShadowDevice
 
     # Copy the file from the shadow copy
-    $ShadowSource = "Z:" + ($Source -replace "^[A-Za-z]:", "")
-    Copy-IfExists $ShadowSource $Destination
+    $ShadowSource = $MountedPath + ($Source -replace "^[A-Za-z]:", "")
+    if (Test-Path -Path $ShadowSource) {
+        Copy-Item -Path $ShadowSource -Destination $Destination -Recurse -Force -ErrorAction SilentlyContinue
+    } else {
+        Write-Output "Failed to locate source file in shadow copy: $ShadowSource"
+    }
 
-    # Clean up shadow copy
-    subst Z: /d
-    diskshadow /s $ScriptPath > $null
-    Remove-Item -Path $ScriptPath -Force
-    Remove-Item -Path $DiskshadowOutput -Force
+    # Unmount the shadow copy
+    subst $MountedPath /d
+    Write-Output "Shadow copy unmounted."
 }
 
-# Collect Registry Hives using shadow copy
+# Collect locked files (e.g., registry hives and NTUSER.DAT)
 Write-Output "Collecting Registry Hives..."
 Copy-LockedFiles "C:\Windows\System32\Config\SAM" "$OutputDirectory\Registry\SAM"
 Copy-LockedFiles "C:\Windows\System32\Config\SYSTEM" "$OutputDirectory\Registry\SYSTEM"
@@ -87,22 +53,15 @@ Copy-LockedFiles "$env:USERPROFILE\NTUSER.DAT" "$OutputDirectory\Registry\NTUSER
 
 # Collect other logs
 Write-Output "Collecting Firewall Logs..."
-Copy-IfExists "C:\Windows\System32\LogFiles\Firewall\pfirewall.log" "$OutputDirectory\Firewall\pfirewall.log"
+Copy-Item -Path "C:\Windows\System32\LogFiles\Firewall\pfirewall.log" -Destination "$OutputDirectory\Firewall" -Force -ErrorAction SilentlyContinue
 
 Write-Output "Collecting Prefetch Files..."
-Copy-IfExists "C:\Windows\Prefetch" "$OutputDirectory\Prefetch"
+Copy-Item -Path "C:\Windows\Prefetch" -Destination "$OutputDirectory\Prefetch" -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Output "Collecting Recent Files..."
-Copy-IfExists "$env:APPDATA\Microsoft\Windows\Recent" "$OutputDirectory\RecentFiles"
+Copy-Item -Path "$env:APPDATA\Microsoft\Windows\Recent" -Destination "$OutputDirectory\RecentFiles" -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Output "Collecting Task Scheduler Files..."
-Copy-IfExists "C:\Windows\System32\Tasks" "$OutputDirectory\Tasks"
-
-Write-Output "Collecting Browser Data..."
-Copy-IfExists "$env:LOCALAPPDATA\Google\Chrome\User Data\Default\History" "$OutputDirectory\BrowserData\Chrome_History"
-
-# Collect Shadow Copy Information
-Write-Output "Listing Shadow Copies..."
-vssadmin list shadows > "$OutputDirectory\ShadowCopies.txt"
+Copy-Item -Path "C:\Windows\System32\Tasks" -Destination "$OutputDirectory\Tasks" -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Output "Log collection completed. Logs saved to $OutputDirectory."
