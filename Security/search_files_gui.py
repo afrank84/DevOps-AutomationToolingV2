@@ -1,12 +1,14 @@
-try:
-    import tkinter as tk
-    from tkinter import filedialog, messagebox
-except ImportError as e:
-    print("tkinter is not installed or not supported on your system.")
-    print("To install tkinter on Linux, run: sudo apt-get install python3-tk")
-    exit(1)
-
+import tkinter as tk
+from tkinter import filedialog, messagebox
 from pathlib import Path
+import chardet  # Requires installation: pip install chardet
+
+def detect_file_encoding(file_path):
+    """Detect the encoding of a file."""
+    with open(file_path, "rb") as f:
+        raw_data = f.read()
+    result = chardet.detect(raw_data)
+    return result["encoding"] or "utf-8"
 
 def search_files():
     """Perform the search for files in the selected results.txt."""
@@ -22,14 +24,19 @@ def search_files():
         return
 
     try:
-        with open(list_path, "r") as f:
+        # Detect encoding for both files
+        list_encoding = detect_file_encoding(list_path)
+        results_encoding = detect_file_encoding(results_path)
+
+        # Read files with detected encoding
+        with open(list_path, "r", encoding=list_encoding) as f:
             file_list = [line.strip() for line in f if line.strip()]
 
-        with open(results_path, "r") as f:
+        with open(results_path, "r", encoding=results_encoding) as f:
             results_content = f.read()
 
         output_file = "search_results.txt"
-        with open(output_file, "w") as out:
+        with open(output_file, "w", encoding="utf-8") as out:
             for filename in file_list:
                 if filename in results_content:
                     out.write(f"{filename}: Found in {results_path}\n")
