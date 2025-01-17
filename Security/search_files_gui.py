@@ -44,9 +44,9 @@ def search_files():
         with open(output_file, "w", encoding="utf-8") as out:
             for filename in file_list:
                 if filename in results_content:
-                    out.write(f"{filename}: Found in {results_path}\n")
+                    out.write(f"Found in {results_path}: {filename}\n")
                 else:
-                    out.write(f"{filename}: Not Found in {results_path}\n")
+                    out.write(f"No Results for {results_path}: {filename}\n")
 
         messagebox.showinfo("Success", f"Search completed. Results saved in {output_file}.")
     except Exception as e:
