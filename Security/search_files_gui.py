@@ -18,7 +18,7 @@ def detect_file_encoding(file_path):
 
 
 def search_files():
-    """Search for files and/or keyword in the results file."""
+    """Search for files and/or keyword in the results file and display counts."""
     if not results_file_path.get():
         messagebox.showerror("Error", "The results file must be selected.")
         return
@@ -36,6 +36,7 @@ def search_files():
         with open(results_path, "r", encoding=results_encoding) as f:
             results_content = f.read()
 
+        match_count = 0
         output_file = "search_results.txt"
         with open(output_file, "w", encoding="utf-8") as out:
             if list_file_path.get():
@@ -51,18 +52,24 @@ def search_files():
                 for filename in file_list:
                     if filename in results_content:
                         out.write(f"Found in {results_path}: {filename}\n")
+                        match_count += 1
                     else:
                         out.write(f"No Results for {results_path}: {filename}\n")
 
             if keyword:
                 if keyword in results_content:
                     out.write(f"\nKeyword '{keyword}' found in {results_path}.\n")
+                    match_count += 1
                 else:
                     out.write(f"\nKeyword '{keyword}' not found in {results_path}.\n")
 
-        messagebox.showinfo("Success", f"Search completed. Results saved in {output_file}.")
+        messagebox.showinfo(
+            "Success", 
+            f"Search completed. {match_count} matches found. Results saved in {output_file}."
+        )
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
+
 
 
 def select_list_file():
