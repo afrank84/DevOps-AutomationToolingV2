@@ -34,7 +34,7 @@ def search_files():
         results_encoding = detect_file_encoding(results_path)
 
         with open(results_path, "r", encoding=results_encoding) as f:
-            results_content = f.read()
+            results_content = f.readlines()  # Read file line by line for keyword search
 
         match_count = 0
         output_file = "search_results.txt"
@@ -50,18 +50,18 @@ def search_files():
                     file_list = [line.strip() for line in f if line.strip()]
 
                 for filename in file_list:
-                    if filename in results_content:
+                    if filename in "".join(results_content):
                         out.write(f"Found in {results_path}: {filename}\n")
                         match_count += 1
                     else:
                         out.write(f"No Results for {results_path}: {filename}\n")
 
             if keyword:
-                if keyword in results_content:
-                    out.write(f"\nKeyword '{keyword}' found in {results_path}.\n")
-                    match_count += 1
-                else:
-                    out.write(f"\nKeyword '{keyword}' not found in {results_path}.\n")
+                out.write(f"\nSearching for keyword: '{keyword}'\n")
+                for line in results_content:
+                    if keyword in line:
+                        out.write(f"Line found: {line.strip()}\n")
+                        match_count += 1
 
         messagebox.showinfo(
             "Success", 
@@ -69,6 +69,7 @@ def search_files():
         )
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
+
 
 
 
