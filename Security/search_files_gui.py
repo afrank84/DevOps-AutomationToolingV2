@@ -8,7 +8,12 @@ def detect_file_encoding(file_path):
     with open(file_path, "rb") as f:
         raw_data = f.read()
     result = chardet.detect(raw_data)
-    return result["encoding"] or "utf-8"
+    encoding = result["encoding"]
+    if encoding:
+        print(f"Detected encoding for {file_path}: {encoding}")
+    else:
+        print(f"Encoding not detected for {file_path}, falling back to utf-8.")
+    return encoding or "utf-8"
 
 def search_files():
     """Perform the search for files in the selected results.txt."""
