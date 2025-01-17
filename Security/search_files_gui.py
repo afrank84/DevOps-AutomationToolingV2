@@ -1,5 +1,11 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox
+try:
+    import tkinter as tk
+    from tkinter import filedialog, messagebox
+except ImportError as e:
+    print("tkinter is not installed or not supported on your system.")
+    print("To install tkinter on Linux, run: sudo apt-get install python3-tk")
+    exit(1)
+
 from pathlib import Path
 
 def search_files():
