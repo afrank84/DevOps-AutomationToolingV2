@@ -1,9 +1,27 @@
-# Define the output directory for log collection
-$OutputDirectory = "C:\ForensicLogs\ActiveDirectory"
+# Function to detect the USB flash drive
+function Get-USBDrive {
+    # Get the list of drives and filter for removable drives
+    $USBDrive = Get-PSDrive -PSProvider FileSystem | Where-Object {
+        ($_.Root -match '^[A-Z]:\\$') -and
+        ([System.IO.DriveInfo]::GetDrives() | Where-Object {
+            $_.Name -eq $_.Root -and $_.DriveType -eq 'Removable'
+        })
+    }
+    return $USBDrive
+}
 
-# Create the output directory if it doesn't exist
+# Get the USB drive and define the output directory
+$USBDrive = Get-USBDrive
+if (-not $USBDrive) {
+    Write-Output "No USB flash drive detected. Please insert a USB drive and try again."
+    exit
+}
+
+$OutputDirectory = Join-Path $USBDrive.Root "ForensicLogs\ActiveDirectory"
+
+# Create the output directory on the USB drive if it doesn't exist
 if (-not (Test-Path -Path $OutputDirectory)) {
-    New-Item -ItemType Directory -Path $OutputDirectory
+    New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 }
 
 # Function to collect Active Directory logon events
@@ -22,7 +40,7 @@ function Collect-ADLogonEvents {
         }
     }
 
-    # Export the collected logon data to a CSV file
+    # Export the collected logon data to a CSV file on the USB drive
     $LogonEvents | Export-Csv -Path $LogonEventsFile -NoTypeInformation -Encoding UTF8
 
     Write-Output "Active Directory logon events saved to $LogonEventsFile."
