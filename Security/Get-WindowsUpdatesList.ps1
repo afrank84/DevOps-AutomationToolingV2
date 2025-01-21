@@ -1,12 +1,20 @@
 # Get the computer name
 $ComputerName = (Get-ComputerInfo -Property CsName).CsName
 
-# Specify the default file name with the computer name
-$FileName = "$($ComputerName)-UpdateHistory.txt"
+# Fallback if the computer name is null or empty
+if ([string]::IsNullOrWhiteSpace($ComputerName)) {
+    $ComputerName = "UnknownComputer"
+}
+
+# Sanitize the computer name to remove invalid characters
+$SanitizedComputerName = $ComputerName -replace '[\\/:*?"<>|]', '_'
+
+# Specify the default file name with the sanitized computer name
+$FileName = "$($SanitizedComputerName)-UpdateHistory.txt"
 
 # Function to detect connected USB drives
 function Get-USBDrive {
-    Get-WmiObject -Query "Select * from Win32_LogicalDisk Where DriveType=2" | Select-Object -ExpandProperty DeviceID
+    Get-CimInstance -ClassName Win32_LogicalDisk | Where-Object { $_.DriveType -eq 2 } | Select-Object -ExpandProperty DeviceID
 }
 
 # Check for connected USB drives
@@ -39,7 +47,7 @@ if ($HistoryCount -gt 0) {
     $UpdateHistory = $Searcher.QueryHistory(0, $HistoryCount)
 
     # Create or overwrite the output file
-    Set-Content -Path $OutputFile -Value "Windows Update History for $($ComputerName):`n"
+    Set-Content -Path $OutputFile -Value "Windows Update History for $($SanitizedComputerName):`n"
 
     # Iterate through the update history and display details
     foreach ($Update in $UpdateHistory) {
