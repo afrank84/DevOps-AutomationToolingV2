@@ -2,7 +2,7 @@
 $ComputerName = (Get-ComputerInfo -Property CsName).CsName
 
 # Specify the default file name with the computer name
-$FileName = "$ComputerName-UpdateHistory.txt"
+$FileName = "$($ComputerName)-UpdateHistory.txt"
 
 # Function to detect connected USB drives
 function Get-USBDrive {
@@ -17,11 +17,11 @@ if ($USBDrives) {
     # Use the first detected USB drive
     $USBDrive = $USBDrives | Select-Object -First 1
     $OutputFile = Join-Path -Path $USBDrive -ChildPath $FileName
-    Write-Output "USB drive detected: $USBDrive. Saving update history to $OutputFile."
+    Write-Output "USB drive detected: $($USBDrive). Saving update history to $($OutputFile)."
 } else {
     # Default to saving in the current directory
     $OutputFile = (Join-Path -Path (Get-Location) -ChildPath $FileName)
-    Write-Output "No USB drive detected. Saving update history to $OutputFile."
+    Write-Output "No USB drive detected. Saving update history to $($OutputFile)."
 }
 
 # Create an update session
@@ -39,7 +39,7 @@ if ($HistoryCount -gt 0) {
     $UpdateHistory = $Searcher.QueryHistory(0, $HistoryCount)
 
     # Create or overwrite the output file
-    Set-Content -Path $OutputFile -Value "Windows Update History for $ComputerName:`n"
+    Set-Content -Path $OutputFile -Value "Windows Update History for $($ComputerName):`n"
 
     # Iterate through the update history and display details
     foreach ($Update in $UpdateHistory) {
@@ -57,7 +57,7 @@ Status: $($Update.ResultCode)
         Add-Content -Path $OutputFile -Value $UpdateDetails
     }
 
-    Write-Output "Update history has been saved to $OutputFile."
+    Write-Output "Update history has been saved to $($OutputFile)."
 } else {
     $Message = "No update history found on this system."
     
