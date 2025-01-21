@@ -1,3 +1,7 @@
+# Define the output file path relative to the script's location
+$ScriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
+$OutputFile = Join-Path $ScriptDirectory "UpdateHistory.txt"
+
 # Create an update session
 $Session = [Activator]::CreateInstance([type]::GetTypeFromProgID("Microsoft.Update.Session"))
 
@@ -12,14 +16,33 @@ if ($HistoryCount -gt 0) {
     # Retrieve the update history
     $UpdateHistory = $Searcher.QueryHistory(0, $HistoryCount)
 
-    # Iterate through the update history and display details
+    # Open a StreamWriter for writing the output to a file
+    $StreamWriter = [System.IO.StreamWriter]::new($OutputFile, $false)
+
+    # Iterate through the update history and display/write details
     foreach ($Update in $UpdateHistory) {
-        Write-Output "Title: $($Update.Title)"
-        Write-Output "Description: $($Update.Description)"
-        Write-Output "Installation Date: $($Update.Date)"
-        Write-Output "Status: $($Update.ResultCode)"
-        Write-Output "----------------------------------"
+        $UpdateDetails = @"
+Title: $($Update.Title)
+Description: $($Update.Description)
+Installation Date: $($Update.Date)
+Status: $($Update.ResultCode)
+----------------------------------
+"@
+        # Write details to console
+        Write-Output $UpdateDetails
+
+        # Write details to file
+        $StreamWriter.WriteLine($UpdateDetails)
     }
+
+    # Close the StreamWriter
+    $StreamWriter.Close()
 } else {
-    Write-Output "No update history found on this system."
+    $Message = "No update history found on this system."
+    
+    # Write message to console
+    Write-Output $Message
+
+    # Write message to file
+    [System.IO.File]::WriteAllText($OutputFile, $Message)
 }
