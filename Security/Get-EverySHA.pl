@@ -1,16 +1,18 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use Digest::SHA qw(sha256_hex);  # Use Digest::SHA for SHA hashes
-use File::Find;                 # To traverse directories
+use Digest::SHA qw(sha256_hex);
+use File::Find;
+use File::Spec;
+use Cwd;
 
-# Define the directory to scan
-my $directory = '.';
-
-# Define the output file
+# Output file for SHA hashes
 my $output_file = 'file_shas.txt';
 
-# Array to store file SHA hashes
+# Define the root directory to scan
+my $root_dir = $^O eq 'MSWin32' ? 'C:\\' : '/';  # C:\ for Windows, / for Linux
+
+# Array to store results
 my @file_shas;
 
 # Subroutine to process each file
@@ -18,7 +20,7 @@ sub process_file {
     # Skip directories
     return if -d;
 
-    # Open the file
+    # Handle potential permission issues
     open my $fh, '<', $_ or do {
         warn "Could not open '$_': $!";
         return;
@@ -34,12 +36,13 @@ sub process_file {
     # Close the file
     close $fh;
 
-    # Store the SHA in the list
+    # Save the file path and SHA
     push @file_shas, { file => $File::Find::name, sha => $sha };
 }
 
-# Traverse the directory and process each file
-find(\&process_file, $directory);
+# Traverse the directory
+print "Scanning from root: $root_dir\n";
+find(\&process_file, $root_dir);
 
 # Write results to the output file
 open my $out_fh, '>', $output_file or die "Could not open '$output_file': $!";
