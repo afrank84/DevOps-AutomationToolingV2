@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .checkbox {
+            width: 20px;
+            height: 20px;
+        }
+        .remove-btn {
+            cursor: pointer;
+            color: red;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Habit Tracker</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Habit</th>
+                <script>
+                    for (let i = 1; i <= 31; i++) {
+                        document.write(`<th>${i}</th>`);
+                    }
+                </script>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="tracker-body">
+        </tbody>
+    </table>
+    <button onclick="addHabit()">Add Habit</button>
+    <script>
+        document.addEventListener("DOMContentLoaded", loadHabits);
+        
+        function addHabit() {
+            let habit = prompt("Enter habit name:");
+            if (habit) {
+                let tbody = document.getElementById("tracker-body");
+                let row = document.createElement("tr");
+                
+                let habitCell = document.createElement("td");
+                habitCell.textContent = habit;
+                row.appendChild(habitCell);
+                
+                for (let i = 1; i <= 31; i++) {
+                    let cell = document.createElement("td");
+                    let checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.classList.add("checkbox");
+                    checkbox.dataset.habit = habit;
+                    checkbox.dataset.day = i;
+                    checkbox.addEventListener("change", saveCheckboxState);
+                    cell.appendChild(checkbox);
+                    row.appendChild(cell);
+                }
+                
+                let removeCell = document.createElement("td");
+                let removeBtn = document.createElement("span");
+                removeBtn.textContent = "❌";
+                removeBtn.classList.add("remove-btn");
+                removeBtn.onclick = function() { removeHabit(row, habit); };
+                removeCell.appendChild(removeBtn);
+                row.appendChild(removeCell);
+                
+                tbody.appendChild(row);
+                saveHabits();
+            }
+        }
+        
+        function removeHabit(row, habit) {
+            if (confirm(`Are you sure you want to remove habit: ${habit}?`)) {
+                row.remove();
+                localStorage.removeItem("habit-" + habit);
+                for (let i = 1; i <= 31; i++) {
+                    localStorage.removeItem(`habit-${habit}-day-${i}`);
+                }
+                saveHabits();
+            }
+        }
+        
+        function saveHabits() {
+            let habits = [];
+            document.querySelectorAll("#tracker-body tr").forEach(row => {
+                let habitName = row.cells[0].textContent;
+                habits.push(habitName);
+            });
+            localStorage.setItem("habits", JSON.stringify(habits));
+        }
+        
+        function saveCheckboxState() {
+            let habit = this.dataset.habit;
+            let day = this.dataset.day;
+            let checked = this.checked;
+            localStorage.setItem(`habit-${habit}-day-${day}`, checked);
+        }
+        
+        function loadHabits() {
+            let storedHabits = JSON.parse(localStorage.getItem("habits")) || [];
+            storedHabits.forEach(habit => {
+                let tbody = document.getElementById("tracker-body");
+                let row = document.createElement("tr");
+                
+                let habitCell = document.createElement("td");
+                habitCell.textContent = habit;
+                row.appendChild(habitCell);
+                
+                for (let i = 1; i <= 31; i++) {
+                    let cell = document.createElement("td");
+                    let checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.classList.add("checkbox");
+                    checkbox.dataset.habit = habit;
+                    checkbox.dataset.day = i;
+                    checkbox.addEventListener("change", saveCheckboxState);
+                    if (localStorage.getItem(`habit-${habit}-day-${i}`) === "true") {
+                        checkbox.checked = true;
+                    }
+                    cell.appendChild(checkbox);
+                    row.appendChild(cell);
+                }
+                
+                let removeCell = document.createElement("td");
+                let removeBtn = document.createElement("span");
+                removeBtn.textContent = "❌";
+                removeBtn.classList.add("remove-btn");
+                removeBtn.onclick = function() { removeHabit(row, habit); };
+                removeCell.appendChild(removeBtn);
+                row.appendChild(removeCell);
+                
+                tbody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
