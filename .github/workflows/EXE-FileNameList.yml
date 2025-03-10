@@ -1,0 +1,40 @@
+name: Build and Package PowerShell EXE
+
+on:
+  push:
+    paths:
+      - "Security/GUI-Get-FileNameTypeSize.ps1"
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install PS2EXE
+        run: |
+          Install-Module -Name ps2exe -Force -Scope CurrentUser -AllowClobber -Confirm:$false
+        shell: pwsh
+
+      - name: Convert PowerShell Script to EXE
+        run: |
+          $InputScript = "${{ github.workspace }}\Security\GUI-Get-FileNameTypeSize.ps1"
+          $OutputExe = "${{ github.workspace }}\Security\GUI-Get-FileNameTypeSize.exe"
+          ps2exe.ps1 -inputFile $InputScript -outputFile $OutputExe -noConsole
+        shell: pwsh
+
+      - name: Upload EXE as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GUI-Get-FileNameTypeSize
+          path: Security/GUI-Get-FileNameTypeSize.exe
+
+      - name: (Optional) Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Security/GUI-Get-FileNameTypeSize.exe
+          body: "Auto-generated EXE from latest PowerShell script."
