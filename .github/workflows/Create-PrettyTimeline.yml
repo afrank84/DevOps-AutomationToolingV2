@@ -60,7 +60,7 @@ jobs:
           "
 
       - name: Upload GitGraph SVG
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: git-graph
           path: gitgraph-output.svg
