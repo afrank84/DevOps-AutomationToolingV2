@@ -21,19 +21,10 @@ else
     echo "No existing BeeBEEP config found."
 fi
 
-# Step 3: Download latest .deb from GitHub
+# Step 3: Download latest .deb from SourceForge
 cd ~/Downloads || exit
 
-echo "Fetching latest BeeBEEP .deb URL..."
-DEB_URL=$(curl -s https://api.github.com/repos/ivanmarchetti/beebeep/releases/latest \
-    | grep browser_download_url \
-    | grep 'amd64.deb' \
-    | cut -d '"' -f 4)
-
-if [ -z "$DEB_URL" ]; then
-    echo "Could not find download URL for BeeBEEP .deb package. Exiting."
-    exit 1
-fi
+DEB_URL="https://sourceforge.net/projects/beebeep/files/Linux/beebeep_5.8.6_amd64.deb/download"
 
 echo "Downloading BeeBEEP from $DEB_URL..."
 wget -q --show-progress "$DEB_URL" -O beebeep_latest.deb
