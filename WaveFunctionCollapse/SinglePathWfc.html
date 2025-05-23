@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Grid Path Generator</title>
+  <title>Single Path with Start, End, Lava, Water</title>
   <style>
     canvas {
       border: 1px solid #000;
@@ -21,22 +21,22 @@ const GRID_HEIGHT = 18;
 const TILE_PATH = 0;
 const TILE_BUILDABLE = 1;
 const TILE_OBSTACLE = 2;
-
-const START_POINTS = [
-  [0, 4],
-  [0, 8],
-  [0, 12]
-];
-
+const TILE_LAVA = 3;
+const TILE_WATER = 4;
 
 const canvas = document.getElementById("gridCanvas");
 const ctx = canvas.getContext("2d");
 
 let grid = [];
+let flashToggle = true;
 
-// Initialize grid with buildable tiles
+let startPoint = [0, Math.floor(GRID_HEIGHT / 2)];
+let endPoint = [GRID_WIDTH - 1, Math.floor(GRID_HEIGHT / 2)];
+let pathTiles = [];
+
 function initializeGrid() {
   grid = [];
+  pathTiles = [];
   for (let x = 0; x < GRID_WIDTH; x++) {
     grid[x] = [];
     for (let y = 0; y < GRID_HEIGHT; y++) {
@@ -46,15 +46,14 @@ function initializeGrid() {
 }
 
 function generatePath() {
-  let x = 0;
-  let y = Math.floor(GRID_HEIGHT / 2);
+  let [x, y] = startPoint;
   grid[x][y] = TILE_PATH;
+  pathTiles.push([x, y]);
 
   while (x < GRID_WIDTH - 1) {
     const directions = [];
-
-    if (y > 0) directions.push([0, -1]);     // Up
-    if (y < GRID_HEIGHT - 1) directions.push([0, 1]); // Down
+    if (y > 0) directions.push([0, -1]);
+    if (y < GRID_HEIGHT - 1) directions.push([0, 1]);
     directions.push([1, 0]); // Always allow right
 
     const [dx, dy] = directions[Math.floor(Math.random() * directions.length)];
@@ -62,11 +61,12 @@ function generatePath() {
     y = Math.min(GRID_HEIGHT - 1, Math.max(0, y + dy));
 
     grid[x][y] = TILE_PATH;
+    pathTiles.push([x, y]);
   }
+
+  endPoint = [x, y];
 }
 
-
-// Add random obstacles using WFC-style chance
 function fillWFC() {
   for (let x = 0; x < GRID_WIDTH; x++) {
     for (let y = 0; y < GRID_HEIGHT; y++) {
@@ -78,14 +78,43 @@ function fillWFC() {
   }
 }
 
-// Render grid
+// Add lava and water near the path, but not on it
+function placeLavaAndWater() {
+  for (const [px, py] of pathTiles) {
+    for (const [dx, dy] of [[1,0], [-1,0], [0,1], [0,-1]]) {
+      const nx = px + dx;
+      const ny = py + dy;
+
+      if (nx >= 0 && nx < GRID_WIDTH && ny >= 0 && ny < GRID_HEIGHT) {
+        if (grid[nx][ny] === TILE_BUILDABLE) {
+          const rand = Math.random();
+          if (rand < 0.1) grid[nx][ny] = TILE_LAVA;
+          else if (rand < 0.2) grid[nx][ny] = TILE_WATER;
+        }
+      }
+    }
+  }
+}
+
 function renderGrid() {
   for (let x = 0; x < GRID_WIDTH; x++) {
     for (let y = 0; y < GRID_HEIGHT; y++) {
-      let color = "#FFFFFF"; // default white
-      if (grid[x][y] === TILE_PATH) color = "#664422"; // brown
-      else if (grid[x][y] === TILE_BUILDABLE) color = "#33cc33"; // green
-      else if (grid[x][y] === TILE_OBSTACLE) color = "#888888"; // gray
+      let color = "#FFFFFF";
+
+      switch (grid[x][y]) {
+        case TILE_PATH: color = "#664422"; break; // Brown
+        case TILE_BUILDABLE: color = "#33cc33"; break; // Green
+        case TILE_OBSTACLE: color = "#888888"; break; // Gray
+        case TILE_LAVA: color = "#FF9900"; break; // Orange
+        case TILE_WATER: color = "#3399FF"; break; // Blue
+      }
+
+      if (x === startPoint[0] && y === startPoint[1]) {
+        color = flashToggle ? "#00FF00" : "#007700"; // Green flash
+      }
+      if (x === endPoint[0] && y === endPoint[1]) {
+        color = flashToggle ? "#FF0000" : "#770000"; // Red flash
+      }
 
       ctx.fillStyle = color;
       ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
@@ -93,12 +122,18 @@ function renderGrid() {
   }
 }
 
-// Run
+function animate() {
+  flashToggle = !flashToggle;
+  renderGrid();
+  setTimeout(animate, 500);
+}
+
 function run() {
   initializeGrid();
   generatePath();
   fillWFC();
-  renderGrid();
+  placeLavaAndWater();
+  animate();
 }
 
 run();
