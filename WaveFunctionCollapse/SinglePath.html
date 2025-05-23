@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Grid Path Generator</title>
+  <style>
+    canvas {
+      border: 1px solid #000;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+<canvas id="gridCanvas" width="960" height="576"></canvas>
+
+<script>
+const CELL_SIZE = 32;
+const GRID_WIDTH = 30;
+const GRID_HEIGHT = 18;
+
+const TILE_PATH = 0;
+const TILE_BUILDABLE = 1;
+const TILE_OBSTACLE = 2;
+
+const START_POINTS = [
+  [0, 4],
+  [0, 8],
+  [0, 12]
+];
+
+
+const canvas = document.getElementById("gridCanvas");
+const ctx = canvas.getContext("2d");
+
+let grid = [];
+
+// Initialize grid with buildable tiles
+function initializeGrid() {
+  grid = [];
+  for (let x = 0; x < GRID_WIDTH; x++) {
+    grid[x] = [];
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+      grid[x][y] = TILE_BUILDABLE;
+    }
+  }
+}
+
+function generatePath() {
+  let x = 0;
+  let y = Math.floor(GRID_HEIGHT / 2);
+  grid[x][y] = TILE_PATH;
+
+  while (x < GRID_WIDTH - 1) {
+    const directions = [];
+
+    if (y > 0) directions.push([0, -1]);     // Up
+    if (y < GRID_HEIGHT - 1) directions.push([0, 1]); // Down
+    directions.push([1, 0]); // Always allow right
+
+    const [dx, dy] = directions[Math.floor(Math.random() * directions.length)];
+    x = Math.min(GRID_WIDTH - 1, x + dx);
+    y = Math.min(GRID_HEIGHT - 1, Math.max(0, y + dy));
+
+    grid[x][y] = TILE_PATH;
+  }
+}
+
+
+// Add random obstacles using WFC-style chance
+function fillWFC() {
+  for (let x = 0; x < GRID_WIDTH; x++) {
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+      if (grid[x][y] !== TILE_BUILDABLE) continue;
+      if (Math.random() < 0.2) {
+        grid[x][y] = TILE_OBSTACLE;
+      }
+    }
+  }
+}
+
+// Render grid
+function renderGrid() {
+  for (let x = 0; x < GRID_WIDTH; x++) {
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+      let color = "#FFFFFF"; // default white
+      if (grid[x][y] === TILE_PATH) color = "#664422"; // brown
+      else if (grid[x][y] === TILE_BUILDABLE) color = "#33cc33"; // green
+      else if (grid[x][y] === TILE_OBSTACLE) color = "#888888"; // gray
+
+      ctx.fillStyle = color;
+      ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
+  }
+}
+
+// Run
+function run() {
+  initializeGrid();
+  generatePath();
+  fillWFC();
+  renderGrid();
+}
+
+run();
+</script>
+</body>
+</html>
