@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JS Tower Defense with Waves</title>
+  <style>
+    body { font-family: sans-serif; }
+    canvas {
+      border: 1px solid #000;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+    <label>Waves:
+        <input id="waveCountInput" type="number" value="10" min="1" max="100">
+      </label>
+      <label>Start Currency:
+        <input id="currencyInput" type="number" value="100" min="0" max="9999">
+      </label>
+      <button id="startButton">Start Game</button>
+      
+<div id="hud">Lives: 5 | Currency: 100 | Wave: 0</div>
+<canvas id="gridCanvas" width="960" height="576"></canvas>
+
+<script>
+const CELL_SIZE = 32, GRID_WIDTH = 30, GRID_HEIGHT = 18;
+const TILE_PATH = 0, TILE_BUILDABLE = 1, TILE_OBSTACLE = 2, TILE_LAVA = 3, TILE_WATER = 4;
+
+const canvas = document.getElementById("gridCanvas");
+const ctx = canvas.getContext("2d");
+const waveInput = document.getElementById("waveCountInput");
+const startBtn = document.getElementById("startButton");
+const hud = document.getElementById("hud");
+
+const currencyInput = document.getElementById("currencyInput");
+
+let towerLastFire = new Map(); // For rate limiting bullets
+let grid = [], pathTiles = [], flashToggle = true;
+let towers = [], bullets = [], enemies = [];
+let lives = 5, currency = 100, currentWave = 0, totalWaves = 10;
+let spawning = false, spawnInterval, waveTimeout;
+
+const startPoint = [0, Math.floor(GRID_HEIGHT / 2)];
+let endPoint = [GRID_WIDTH - 1, Math.floor(GRID_HEIGHT / 2)];
+
+function initializeGrid() {
+  grid = []; pathTiles = [];
+  for (let x = 0; x < GRID_WIDTH; x++) {
+    grid[x] = [];
+    for (let y = 0; y < GRID_HEIGHT; y++) grid[x][y] = TILE_BUILDABLE;
+  }
+}
+
+function generatePath() {
+  let [x, y] = startPoint;
+  grid[x][y] = TILE_PATH; pathTiles.push([x, y]);
+  while (x < GRID_WIDTH - 1) {
+    const directions = [];
+    if (y > 0) directions.push([0, -1]);
+    if (y < GRID_HEIGHT - 1) directions.push([0, 1]);
+    directions.push([1, 0]);
+    const [dx, dy] = directions[Math.floor(Math.random() * directions.length)];
+    x = Math.min(GRID_WIDTH - 1, x + dx);
+    y = Math.min(GRID_HEIGHT - 1, Math.max(0, y + dy));
+    grid[x][y] = TILE_PATH; pathTiles.push([x, y]);
+  }
+  endPoint = [x, y];
+}
+
+function fillWFC() {
+  for (let x = 0; x < GRID_WIDTH; x++)
+    for (let y = 0; y < GRID_HEIGHT; y++)
+      if (grid[x][y] === TILE_BUILDABLE && Math.random() < 0.2)
+        grid[x][y] = TILE_OBSTACLE;
+}
+
+function placeLavaAndWater() {
+  for (const [px, py] of pathTiles) {
+    for (const [dx, dy] of [[1,0], [-1,0], [0,1], [0,-1]]) {
+      const nx = px + dx, ny = py + dy;
+      if (nx >= 0 && nx < GRID_WIDTH && ny >= 0 && ny < GRID_HEIGHT && grid[nx][ny] === TILE_BUILDABLE) {
+        const rand = Math.random();
+        if (rand < 0.1) grid[nx][ny] = TILE_LAVA;
+        else if (rand < 0.2) grid[nx][ny] = TILE_WATER;
+      }
+    }
+  }
+}
+
+function spawnEnemy() {
+  if (!spawning) return;
+  enemies.push({
+    index: 0,
+    x: startPoint[0] * CELL_SIZE + 16,
+    y: startPoint[1] * CELL_SIZE + 16,
+    health: 2 + currentWave,
+    alive: true
+  });
+}
+
+function updateEnemies() {
+  enemies.forEach(e => {
+    if (!e.alive) return;
+    const [gx, gy] = pathTiles[e.index];
+    const tx = gx * CELL_SIZE + 16;
+    const ty = gy * CELL_SIZE + 16;
+    const dx = tx - e.x, dy = ty - e.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1) {
+      e.index++;
+      if (e.index >= pathTiles.length) {
+        e.alive = false;
+        lives--;
+      }
+    } else {
+      e.x += dx / dist;
+      e.y += dy / dist;
+    }
+  });
+  enemies = enemies.filter(e => e.alive);
+}
+
+function updateBullets() {
+  bullets.forEach(b => {
+    b.x += b.vx; b.y += b.vy;
+    enemies.forEach(e => {
+      if (Math.hypot(e.x - b.x, e.y - b.y) < 8 && e.alive) {
+        e.health--; b.hit = true;
+        if (e.health <= 0) {
+          e.alive = false;
+          currency += 10;
+        }
+      }
+    });
+  });
+  bullets = bullets.filter(b => !b.hit && b.x >= 0 && b.y >= 0 && b.x <= canvas.width && b.y <= canvas.height);
+}
+
+function fireBullets() {
+  const now = Date.now();
+  for (let tower of towers) {
+    const key = `${tower.x},${tower.y}`;
+    if (!towerLastFire.has(key) || now - towerLastFire.get(key) > 333) {
+      for (let e of enemies) {
+        if (e.alive && Math.hypot(tower.x * CELL_SIZE + 16 - e.x, tower.y * CELL_SIZE + 16 - e.y) < 100) {
+          const dx = e.x - (tower.x * CELL_SIZE + 16);
+          const dy = e.y - (tower.y * CELL_SIZE + 16);
+          const dist = Math.hypot(dx, dy);
+          bullets.push({
+            x: tower.x * CELL_SIZE + 16,
+            y: tower.y * CELL_SIZE + 16,
+            vx: dx / dist * 4,
+            vy: dy / dist * 4,
+            hit: false
+          });
+          towerLastFire.set(key, now);
+          break;
+        }
+      }
+    }
+  }
+}
+
+
+function renderGrid() {
+  flashToggle = !flashToggle;
+  for (let x = 0; x < GRID_WIDTH; x++) {
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+      let color = "#FFFFFF";
+      switch (grid[x][y]) {
+        case TILE_PATH: color = "#664422"; break;
+        case TILE_BUILDABLE: color = "#33cc33"; break;
+        case TILE_OBSTACLE: color = "#888888"; break;
+        case TILE_LAVA: color = "#FF9900"; break;
+        case TILE_WATER: color = "#3399FF"; break;
+      }
+      if (x === startPoint[0] && y === startPoint[1])
+        color = flashToggle ? "#00FF00" : "#007700";
+      if (x === endPoint[0] && y === endPoint[1])
+        color = flashToggle ? "#FF0000" : "#770000";
+      ctx.fillStyle = color;
+      ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
+  }
+  towers.forEach(t => {
+    ctx.fillStyle = "black";
+    ctx.beginPath();
+    ctx.arc(t.x * CELL_SIZE + 16, t.y * CELL_SIZE + 16, 8, 0, 2 * Math.PI);
+    ctx.fill();
+  });
+  bullets.forEach(b => {
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(b.x, b.y, 4, 4);
+  });
+  enemies.forEach(e => {
+    ctx.fillStyle = "purple";
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, 8, 0, 2 * Math.PI);
+    ctx.fill();
+  });
+}
+
+function gameLoop() {
+  renderGrid();
+  updateEnemies();
+  updateBullets();
+  fireBullets();
+  hud.innerText = `Lives: ${lives} | Currency: ${currency} | Wave: ${currentWave}/${totalWaves}`;
+
+  if (lives <= 0) return alert("💀 Game Over");
+  if (currentWave === totalWaves && enemies.length === 0) return alert("🏆 Victory!");
+
+  requestAnimationFrame(gameLoop);
+}
+
+canvas.addEventListener("click", e => {
+  const x = Math.floor(e.offsetX / CELL_SIZE);
+  const y = Math.floor(e.offsetY / CELL_SIZE);
+  if (grid[x][y] === TILE_BUILDABLE && currency >= 50) {
+    towers.push({ x, y });
+    grid[x][y] = TILE_OBSTACLE;
+    currency -= 50;
+  }
+});
+
+function startWaveLoop() {
+  if (currentWave >= totalWaves) return;
+  currentWave++;
+  let count = 0;
+  spawning = true;
+  spawnInterval = setInterval(() => {
+    if (count++ >= 10 + currentWave) {
+      clearInterval(spawnInterval);
+      spawning = false;
+      setTimeout(startWaveLoop, 5000);
+    } else {
+      spawnEnemy();
+    }
+  }, 700);
+}
+
+startBtn.onclick = () => {
+  totalWaves = parseInt(waveInput.value) || 10;
+  startBtn.disabled = true;
+  initializeGrid();
+  generatePath();
+  fillWFC();
+  placeLavaAndWater();
+  startWaveLoop();
+  gameLoop();
+};
+</script>
+</body>
+</html>
