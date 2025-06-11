@@ -2,54 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Create GitHub Issue</title>
+  <title>Create GitHub Issue (Local Form)</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    label { display: block; margin-top: 10px; }
-    input, textarea { width: 100%; padding: 5px; margin-top: 5px; }
-    button { margin-top: 15px; padding: 10px 20px; }
-    pre { background: #f4f4f4; padding: 10px; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, textarea { width: 100%; padding: 8px; margin-top: 5px; }
+    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; }
+    pre { background: #f0f0f0; padding: 10px; white-space: pre-wrap; word-wrap: break-word; }
   </style>
 </head>
 <body>
-  <h2>Create GitHub Issue</h2>
-  
-  <label>GitHub Token (keep private):</label>
-  <input type="password" id="token" placeholder="ghp_...">
+  <h2>🔐 GitHub Issue Creator (Local)</h2>
 
-  <label>Repository (format: owner/repo):</label>
-  <input type="text" id="repo" placeholder="octocat/Hello-World">
+  <form id="issueForm">
+    <label for="token">GitHub PAT (Personal Access Token)</label>
+    <input type="password" id="token" placeholder="ghp_..." required>
 
-  <label>Title:</label>
-  <input type="text" id="title" placeholder="Bug: Something broke">
+    <label for="repo">Repository (format: owner/repo)</label>
+    <input type="text" id="repo" placeholder="octocat/Hello-World" required>
 
-  <label>Description:</label>
-  <textarea id="body" rows="5" placeholder="Describe the issue..."></textarea>
+    <label for="title">Issue Title</label>
+    <input type="text" id="title" placeholder="Bug: Something broke" required>
 
-  <label>Labels (comma-separated, optional):</label>
-  <input type="text" id="labels" placeholder="bug,urgent">
+    <label for="body">Issue Description</label>
+    <textarea id="body" rows="5" placeholder="Describe the issue..."></textarea>
 
-  <label>Assignees (comma-separated usernames, optional):</label>
-  <input type="text" id="assignees" placeholder="octocat">
+    <label for="labels">Labels (comma-separated)</label>
+    <input type="text" id="labels" placeholder="bug,urgent">
 
-  <button onclick="createIssue()">Submit Issue</button>
+    <label for="assignees">Assignees (comma-separated GitHub usernames)</label>
+    <input type="text" id="assignees" placeholder="octocat">
 
-  <h3>Response:</h3>
-  <pre id="response">Waiting for input...</pre>
+    <button type="submit">🚀 Submit Issue</button>
+  </form>
+
+  <h3>📡 Response:</h3>
+  <pre id="response">Waiting...</pre>
 
   <script>
-    async function createIssue() {
+    document.getElementById('issueForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
       const token = document.getElementById('token').value.trim();
       const repo = document.getElementById('repo').value.trim();
       const title = document.getElementById('title').value.trim();
       const body = document.getElementById('body').value.trim();
-      const labels = document.getElementById('labels').value.trim().split(',').map(s => s.trim()).filter(Boolean);
-      const assignees = document.getElementById('assignees').value.trim().split(',').map(s => s.trim()).filter(Boolean);
-
-      if (!token || !repo || !title) {
-        alert('Token, repo, and title are required.');
-        return;
-      }
+      const labels = document.getElementById('labels').value.split(',').map(s => s.trim()).filter(Boolean);
+      const assignees = document.getElementById('assignees').value.split(',').map(s => s.trim()).filter(Boolean);
 
       const [owner, repoName] = repo.split('/');
       const url = `https://api.github.com/repos/${owner}/${repoName}/issues`;
@@ -61,11 +60,11 @@
         ...(assignees.length && { assignees })
       };
 
-      const resBox = document.getElementById('response');
-      resBox.textContent = 'Submitting...';
+      const responseBox = document.getElementById('response');
+      responseBox.textContent = 'Sending request...';
 
       try {
-        const response = await fetch(url, {
+        const res = await fetch(url, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -75,16 +74,16 @@
           body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
-        if (response.ok) {
-          resBox.textContent = `✅ Issue created: ${data.html_url}`;
+        const result = await res.json();
+        if (res.ok) {
+          responseBox.textContent = `✅ Success: Issue created\n${result.html_url}`;
         } else {
-          resBox.textContent = `❌ Error: ${JSON.stringify(data, null, 2)}`;
+          responseBox.textContent = `❌ Error:\n${JSON.stringify(result, null, 2)}`;
         }
       } catch (err) {
-        resBox.textContent = `❌ Exception: ${err.message}`;
+        responseBox.textContent = `❌ Network error:\n${err.message}`;
       }
-    }
+    });
   </script>
 </body>
 </html>
