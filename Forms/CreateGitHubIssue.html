@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create GitHub Issue</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    label { display: block; margin-top: 10px; }
+    input, textarea { width: 100%; padding: 5px; margin-top: 5px; }
+    button { margin-top: 15px; padding: 10px 20px; }
+    pre { background: #f4f4f4; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Create GitHub Issue</h2>
+  
+  <label>GitHub Token (keep private):</label>
+  <input type="password" id="token" placeholder="ghp_...">
+
+  <label>Repository (format: owner/repo):</label>
+  <input type="text" id="repo" placeholder="octocat/Hello-World">
+
+  <label>Title:</label>
+  <input type="text" id="title" placeholder="Bug: Something broke">
+
+  <label>Description:</label>
+  <textarea id="body" rows="5" placeholder="Describe the issue..."></textarea>
+
+  <label>Labels (comma-separated, optional):</label>
+  <input type="text" id="labels" placeholder="bug,urgent">
+
+  <label>Assignees (comma-separated usernames, optional):</label>
+  <input type="text" id="assignees" placeholder="octocat">
+
+  <button onclick="createIssue()">Submit Issue</button>
+
+  <h3>Response:</h3>
+  <pre id="response">Waiting for input...</pre>
+
+  <script>
+    async function createIssue() {
+      const token = document.getElementById('token').value.trim();
+      const repo = document.getElementById('repo').value.trim();
+      const title = document.getElementById('title').value.trim();
+      const body = document.getElementById('body').value.trim();
+      const labels = document.getElementById('labels').value.trim().split(',').map(s => s.trim()).filter(Boolean);
+      const assignees = document.getElementById('assignees').value.trim().split(',').map(s => s.trim()).filter(Boolean);
+
+      if (!token || !repo || !title) {
+        alert('Token, repo, and title are required.');
+        return;
+      }
+
+      const [owner, repoName] = repo.split('/');
+      const url = `https://api.github.com/repos/${owner}/${repoName}/issues`;
+
+      const payload = {
+        title,
+        body,
+        ...(labels.length && { labels }),
+        ...(assignees.length && { assignees })
+      };
+
+      const resBox = document.getElementById('response');
+      resBox.textContent = 'Submitting...';
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          resBox.textContent = `✅ Issue created: ${data.html_url}`;
+        } else {
+          resBox.textContent = `❌ Error: ${JSON.stringify(data, null, 2)}`;
+        }
+      } catch (err) {
+        resBox.textContent = `❌ Exception: ${err.message}`;
+      }
+    }
+  </script>
+</body>
+</html>
