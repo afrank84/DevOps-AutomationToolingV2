@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>GitHub File Churn Analyzer — Trend + Scatter</title>
+<style>
+  :root{--bg:#0f172a;--card:#111827;--muted:#94a3b8;--text:#e5e7eb;--accent:#38bdf8;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--border:#1f2937}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  header{padding:18px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:linear-gradient(180deg,rgba(15,23,42,.97),rgba(15,23,42,.88))}
+  h1{margin:0;font-size:18px;letter-spacing:.4px}
+  .wrap{max-width:1280px;margin:0 auto;padding:16px}
+  .row{display:grid;gap:12px}
+  @media(min-width:1024px){.row{grid-template-columns:1.2fr 1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  input,select,button,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text)}
+  input::placeholder{color:#6b7280}
+  select[multiple]{height:120px}
+  button{background:var(--accent);color:#001018;border:none;font-weight:600;cursor:pointer}
+  button.secondary{background:#0b1220;border:1px solid var(--border);color:#cbd5e1}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .inline{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .hint{color:var(--muted);font-size:12px;margin-top:6px}
+  .flex{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .kpi{background:#0b1220;border:1px dashed var(--border);border-radius:12px;padding:10px 12px;font-size:12px}
+  .kpi strong{font-size:16px}
+  .table{width:100%;border-collapse:collapse;margin-top:8px}
+  .table th,.table td{border-bottom:1px solid var(--border);padding:10px 8px;font-size:13px;text-align:left;vertical-align:middle}
+  .table th{color:#cbd5e1;font-weight:700}
+  .table tr:nth-child(even){background:rgba(255,255,255,.02)}
+  .tag{font-size:11px;padding:2px 8px;border-radius:999px;background:#0b1220;border:1px solid var(--border);color:#cbd5e1;text-decoration:none}
+  .good{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--err)}
+  .grid-2{display:grid;gap:12px}
+  @media(min-width:1024px){.grid-2{grid-template-columns: 1.4fr 1fr}}
+  pre{white-space:pre-wrap;word-wrap:break-word;background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:12px;max-height:420px;overflow:auto}
+  .footer{color:#6b7280;font-size:12px;margin-top:10px}
+  .pill{display:inline-flex;gap:6px;align-items:center}
+  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .section-title{font-size:13px;color:#cbd5e1;margin:12px 0 6px;font-weight:600}
+
+  /* Avatars & chips */
+  .avatar{width:22px;height:22px;border-radius:50%;display:inline-block;vertical-align:middle;border:1px solid #0b1220;background:#0b1220;object-fit:cover}
+  .avatar-lg{width:28px;height:28px;border-radius:50%}
+  .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:999px;background:#0b1220;color:#cbd5e1;cursor:pointer}
+  .chip.selected{outline:2px solid var(--accent); background:rgba(56,189,248,.12)}
+  .chip .name{font-size:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .chips .chip img{box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+
+  /* Diff coloring */
+  .diff-add{color:var(--ok)}
+  .diff-del{color:var(--err)}
+  .diff-hunk{color:#a5b4fc}
+
+  /* Simple collapsible help */
+  details.help{border:1px dashed var(--border); border-radius:12px; padding:10px 12px; background:#0b1220; margin-top:10px}
+  details.help summary{cursor:pointer; font-weight:600; color:#e5e7eb}
+  details.help .content{color:#cbd5e1; font-size:13px; line-height:1.35}
+</style>
+</head>
+<body>
+  <header class="wrap">
+    <h1>GitHub File Churn Analyzer <span class="tag">trend + scatter</span></h1>
+  </header>
+
+  <main class="wrap">
+    <div class="row">
+      <section class="card">
+        <div class="inline">
+          <div>
+            <label>GitHub Token (optional, improves rate limits)</label>
+            <input id="token" type="password" placeholder="ghp_... or fine-grained token" />
+            <div class="hint">Stored locally in your browser (localStorage).</div>
+          </div>
+          <div>
+            <label>Owner (user or org)</label>
+            <input id="owner" placeholder="e.g. torvalds or vercel" />
+          </div>
+        </div>
+
+        <div class="inline" style="margin-top:10px">
+          <div>
+            <label>Repository</label>
+            <select id="repo"><option value="">— Select owner first —</option></select>
+          </div>
+          <div>
+            <label>Branch</label>
+            <select id="branch"><option value="">— Select repo first —</option></select>
+          </div>
+        </div>
+
+        <div class="inline" style="margin-top:10px">
+          <div>
+            <label>Date Range</label>
+            <div class="inline">
+              <input id="since" type="date" />
+              <input id="until" type="date" />
+            </div>
+            <div class="hint">Defaults to Jan 1 → today. Clear either field to analyze recent history using <b>Max commits</b>.</div>
+          </div>
+          <div>
+            <label>Max commits to scan (API intensive)</label>
+            <input id="maxCommits" type="number" min="50" max="5000" step="50" value="500" />
+            <div class="hint">Each commit requires an extra API call to fetch changed files.</div>
+          </div>
+        </div>
+
+        <div class="inline" style="margin-top:10px">
+          <div>
+            <label>Path filter (optional, prefix)</label>
+            <input id="pathFilter" placeholder="e.g. src/ or packages/web/" />
+          </div>
+          <div>
+            <label>Exclude patterns (comma separated, simple contains)</label>
+            <input id="exclude" placeholder="e.g. .md, test, vendor" />
+          </div>
+        </div>
+
+        <div class="section-title">Advanced Filters</div>
+        <div class="inline">
+          <div>
+            <label>Author filter (multi-select)</label>
+            <select id="authors" multiple>
+              <option value="" selected>(All authors)</option>
+            </select>
+            <div class="hint">Tip: click chips below to (de)select authors quickly. Choose “(All authors)” to clear the filter.</div>
+            <div id="authorChips" class="chips"></div>
+          </div>
+          <div>
+            <label>Group by directory depth</label>
+            <div class="inline">
+              <input id="dirDepth" type="number" min="0" max="10" step="1" value="0" />
+              <select id="aggMetric">
+                <option value="edits" selected>Edits (churn)</option>
+                <option value="additions">Additions</option>
+                <option value="deletions">Deletions</option>
+              </select>
+            </div>
+            <div class="hint">0 = files; 1+ groups by first N path segments (e.g., <code>src/</code>).</div>
+          </div>
+        </div>
+
+        <details class="help">
+          <summary>How to use / What am I seeing?</summary>
+          <div class="content">
+            <ul>
+              <li><b>Trend</b> shows weekly edits (files touched per week).</li>
+              <li><b>Scatter</b> shows <b>Churn vs Size</b>. X-axis defaults to <b>LOC</b> (file size). Y-axis is <b>edits</b> (how many commits touched it). Click a dot to preview the file and latest diff.</li>
+              <li><b>LOC</b> is a rough size metric (newline count of the latest version). High LOC + high churn = likely refactor candidate.</li>
+              <li>Use <b>Author chips</b> or multi-select to filter by contributors.</li>
+              <li>The table lists the <b>Top 10</b> items by the selected metric.</li>
+            </ul>
+          </div>
+        </details>
+
+        <div class="flex" style="margin-top:12px">
+          <button id="save">Save Token & Owner</button>
+          <button id="loadRepos">Load Repos</button>
+          <button id="loadBranches" disabled>Load Branches</button>
+          <button id="analyze" disabled>Analyze</button>
+          <button class="secondary" id="exportCsv" disabled>Export CSV</button>
+          <span id="status" class="pill"></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="flex">
+          <div class="kpi">Commits scanned<br><strong id="kpi-commits">0</strong></div>
+          <div class="kpi">Unique items<br><strong id="kpi-files">0</strong></div>
+          <div class="kpi">Top edits<br><strong id="kpi-top">0</strong></div>
+          <div class="kpi">Period<br><strong id="kpi-period">—</strong></div>
+        </div>
+
+        <div class="section-title">Trend (weekly edits)</div>
+        <canvas id="trendChart" height="180"></canvas>
+
+        <div class="section-title" style="margin-top:14px">Churn vs Size (click a dot to preview)</div>
+        <div class="hint">X: <span id="scatterXLabel">Current File Size (LOC)</span> • Y: Churn (commits touching item). <br/>Note: Using LOC requires fetching the latest file content once per file; this is cached during the session.</div>
+        <canvas id="scatterChart" height="260" style="margin-top:6px"></canvas>
+      </section>
+    </div>
+
+    <section class="card">
+      <label>Top 10 Results (click a row to preview file or most-recent diff)</label>
+      <table class="table" id="filesTable">
+        <thead>
+          <tr>
+            <th>#</th><th>Path / Group</th><th>Edits</th><th>+ Lines</th><th>− Lines</th><th>Last Author</th><th>Last Modified</th>
+          </tr>
+        </thead>
+        <tbody id="filesTbody"><tr><td colspan="7" style="color:#94a3b8">No data yet.</td></tr></tbody>
+      </table>
+      <div class="hint">Table is limited to Top 10 for readability. Use directory grouping to see broader hotspots.</div>
+    </section>
+
+    <section class="card grid-2" style="margin-top:12px">
+      <div>
+        <label>Preview: Current File Content</label>
+        <pre id="fileContent">Select a file (dirDepth = 0) from the table or scatter…</pre>
+      </div>
+      <div>
+        <label>Most Recent Diff (touching this file)</label>
+        <pre id="fileDiff">—</pre>
+        <div class="flex">
+          <a id="viewOnGitHub" target="_blank" class="tag" href="#">Open on GitHub</a>
+          <span id="fileMeta" class="hint"></span>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">Local-only app. Your token and last selections are saved to <code>localStorage</code> on this device.</div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <script>
+    // ---------- Helpers ----------
+    const $ = (id) => document.getElementById(id);
+    const statusEl = $('status');
+    function setStatus(msg, spinning=false) {
+      statusEl.innerHTML = spinning ? '<span class="spinner"></span> ' + msg : (msg || '');
+    }
+    function authHeaders() {
+      const t = $('token').value.trim();
+      const h = { 'Accept':'application/vnd.github+json' };
+      if (t) h['Authorization'] = 'Bearer ' + t;
+      return h;
+    }
+    function store() {
+      localStorage.setItem('gh_token', $('token').value);
+      localStorage.setItem('gh_owner', $('owner').value.trim());
+    }
+    function restore() {
+      $('token').value = localStorage.getItem('gh_token') || '';
+      $('owner').value = localStorage.getItem('gh_owner') || '';
+    }
+    function setDefaultDates(){
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 1);
+      if (!$('since').value) $('since').value = start.toISOString().split('T')[0];
+      if (!$('until').value) $('until').value = now.toISOString().split('T')[0];
+    }
+    function fmtDate(s) { try { return new Date(s).toISOString().split('T')[0]; } catch { return s; } }
+    function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+    async function gh(url) {
+      const res = await fetch(url, { headers: authHeaders() });
+      if (!res.ok) throw new Error(`GitHub API ${res.status}: ${url}`);
+      return res.json();
+    }
+    function weekStartISO(d) {
+      const x = new Date(d);
+      const day = (x.getUTCDay()+6)%7; x.setUTCDate(x.getUTCDate()-day); x.setUTCHours(0,0,0,0);
+      return x.toISOString().split('T')[0];
+    }
+    function groupKey(path, depth){
+      if (depth<=0) return path;
+      const parts = path.split('/');
+      return parts.slice(0, Math.min(depth, parts.length)).join('/') + (parts.length>depth?'/': '');
+    }
+    function escapeHtml(s){ return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function colorizePatch(patch){
+      if (!patch) return 'No textual patch available (binary or too large).';
+      return patch.split('\n').map(line=>{
+        if (line.startsWith('@@')) return `<span class="diff-hunk">${escapeHtml(line)}</span>`;
+        if (line.startsWith('+')) return `<span class="diff-add">${escapeHtml(line)}</span>`;
+        if (line.startsWith('-')) return `<span class="diff-del">${escapeHtml(line)}</span>`;
+        return escapeHtml(line);
+      }).join('\n');
+    }
+
+    // Avatars chip list
+    function renderAuthorChips(authorInfoMap){
+      const chips = $('authorChips');
+      const selected = new Set([...$('authors').selectedOptions].map(o=>o.value));
+      const entries = [['','(All authors)', '']].concat([...authorInfoMap.entries()].map(([key,info])=>[key,info.label,info.avatar]));
+      chips.innerHTML = entries.map(([v,label,avatar])=>{
+        const sel = selected.size===0 ? (v==='') : selected.has(v);
+        const img = avatar ? `<img class="avatar" src="${avatar}" alt="">` : `<span class="avatar" style="display:inline-grid;place-items:center;font-size:11px;background:#0b1220;border:1px solid var(--border)">👤</span>`;
+        return `<div class="chip ${sel?'selected':''}" data-value="${v}">${img}<span class="name">${label}</span></div>`;
+      }).join('');
+      [...chips.querySelectorAll('.chip')].forEach(ch=>{
+        ch.addEventListener('click', ()=>{
+          const val = ch.getAttribute('data-value');
+          const sel = $('authors');
+          if (val==='') {
+            // select All
+            [...sel.options].forEach(o=>o.selected = (o.value===''));
+          } else {
+            // toggle this author
+            const opt = [...sel.options].find(o=>o.value===val);
+            if (opt) opt.selected = !opt.selected;
+            // if any specific is selected, deselect "(All)"
+            const anySpecific = [...sel.options].some(o=>o.value && o.selected);
+            sel.options[0].selected = !anySpecific; // first option is ""
+          }
+          renderAuthorChips(authorInfoMap); // refresh highlight
+        });
+      });
+    }
+
+    // ---------- UI wiring ----------
+    restore(); setDefaultDates();
+    $('save').addEventListener('click', ()=>{ store(); setStatus('Saved.'); });
+    $('loadRepos').addEventListener('click', loadRepos);
+    $('loadBranches').addEventListener('click', loadBranches);
+    $('analyze').addEventListener('click', analyze);
+    $('exportCsv').addEventListener('click', exportCSV);
+    $('owner').addEventListener('keydown', e=>{ if(e.key==='Enter') loadRepos(); });
+    $('repo').addEventListener('change', ()=>{ $('loadBranches').disabled = !$('repo').value; $('analyze').disabled = true; });
+    $('branch').addEventListener('change', ()=>{ $('analyze').disabled = !($('repo').value && $('branch').value); });
+    $('authors').addEventListener('change', ()=>{ renderAuthorChips(lastAuthorInfoMap); });
+
+    let trendChart, scatterChart, latestRows = [];
+    const fileSizeCache = new Map(); // path -> {loc, fetchedAt}
+    const lastAuthorInfoMap = new Map(); // key -> {label, avatar}
+
+    // ---------- Charts ----------
+    function drawTrend(labels, counts) {
+      if (trendChart) trendChart.destroy();
+      trendChart = new Chart($('trendChart').getContext('2d'), {
+        type: 'line', 
+        data: { labels, datasets:[{ 
+          label:'Weekly edits', data:counts, tension:.25, fill:false,
+          borderColor:'rgba(34,197,94,1)', pointBackgroundColor:'rgba(34,197,94,1)'
+        }] },
+        options:{ 
+          responsive:true, plugins:{ legend:{ display:false } }, 
+          scales:{ 
+            x:{ ticks:{ color:'#e5e7eb' }, grid:{ color:'rgba(255,255,255,0.05)'} }, 
+            y:{ beginAtZero:true, ticks:{ color:'#e5e7eb' }, grid:{ color:'rgba(255,255,255,0.05)'} } 
+          } 
+        }
+      });
+    }
+
+    function drawScatter(rows, ctx) {
+      if (scatterChart) scatterChart.destroy();
+      const topForScatter = Math.min(rows.length, 50); // keep readable
+      const points = rows.slice(0, topForScatter).map((r)=>({
+        x: fileSizeCache.get(r.samplePath)?.loc ?? 0, // LOC (default)
+        y: r.edits,
+        label: r.file,
+        path: r.samplePath,
+        sha: r.lastSha
+      }));
+
+      $('scatterXLabel').textContent = 'Current File Size (LOC)';
+
+      scatterChart = new Chart($('scatterChart').getContext('2d'), {
+        type: 'scatter',
+        data: { datasets: [{
+          label:'Files', data: points,
+          pointRadius: 4, pointHoverRadius: 6,
+          pointBackgroundColor: 'rgba(56,189,248,1)', borderColor:'rgba(56,189,248,1)'
+        }] },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display:false },
+            tooltip: { callbacks: { label: (c)=> `${c.raw.label}: churn=${c.raw.y}, LOC=${c.raw.x}` } }
+          },
+          scales: {
+            x: { title:{ display:true, text:'Size (LOC)' }, ticks:{ color:'#e5e7eb' }, grid:{ color:'rgba(255,255,255,0.05)' } },
+            y: { title:{ display:true, text:'Churn (# commits touching file)' }, beginAtZero:true, ticks:{ color:'#e5e7eb' }, grid:{ color:'rgba(255,255,255,0.05)' } }
+          },
+          onClick: async (_evt, elements) => {
+            if (!elements.length) return;
+            const idx = elements[0].index;
+            const p = points[idx];
+            const depth = parseInt($('dirDepth').value||'0',10);
+            if (depth>0) { $('fileContent').textContent = 'Preview disabled for grouped view (set directory depth to 0).'; $('fileDiff').textContent = '—'; return; }
+            await previewFile(ctx, p.path, p.sha, p.label);
+          }
+        }
+      });
+    }
+
+    // ---------- Load repos ----------
+    async function loadRepos() {
+      try {
+        setStatus('Loading repos…', true);
+        const owner = $('owner').value.trim();
+        if (!owner) { setStatus('Enter an owner.'); return; }
+        let repos = [];
+        try { repos = await gh(`https://api.github.com/users/${owner}/repos?per_page=100&type=owner&sort=updated`); }
+        catch {}
+        if (!Array.isArray(repos) || repos.length===0) {
+          repos = await gh(`https://api.github.com/orgs/${owner}/repos?per_page=100&type=all&sort=updated`);
+        }
+        repos.sort((a,b)=> a.name.localeCompare(b.name));
+        $('repo').innerHTML = repos.map(r=>`<option value="${r.name}">${r.name}${r.private?' (private)':''}</option>`).join('');
+        $('loadBranches').disabled = false;
+        $('analyze').disabled = true;
+        setStatus(`Found ${repos.length} repos.`);
+      } catch (e) {
+        console.error(e); setStatus('Failed to load repos. Check owner/token.');
+      }
+    }
+
+    // ---------- Load branches ----------
+    async function loadBranches() {
+      try {
+        setStatus('Loading branches…', true);
+        const owner = $('owner').value.trim(), repo = $('repo').value;
+        if (!owner || !repo) return setStatus('Select owner and repo.');
+
+        let page = 1; let branches = []; let batch = [];
+        do {
+          batch = await gh(`https://api.github.com/repos/${owner}/${repo}/branches?per_page=100&page=${page}`);
+          branches = branches.concat(batch);
+          page++;
+          if (batch.length === 100) await sleep(120);
+        } while (batch.length === 100);
+
+        const byName = new Map(); for (const b of branches) byName.set(b.name, b);
+        branches = [...byName.values()].sort((a,b)=> a.name.localeCompare(b.name));
+        branches.sort((a,b)=> (a.name==='develop'? -1 : b.name==='develop'? 1 : a.name.localeCompare(b.name)));
+
+        $('branch').innerHTML = branches.map(b=>`<option value="${b.name}">${b.name}${b.protected?' (protected)':''}</option>`).join('');
+        if (branches.some(b=>b.name==='develop')) $('branch').value = 'develop';
+
+        $('analyze').disabled = !($('repo').value && $('branch').value);
+        setStatus(`Loaded ${branches.length} branches.`);
+      } catch (e) { console.error(e); setStatus('Failed to load branches.'); }
+    }
+
+    // ---------- Analyze ----------
+    async function analyze() {
+      const owner = $('owner').value.trim();
+      const repo = $('repo').value;
+      const branch = $('branch').value;
+      if (!owner || !repo || !branch) { setStatus('Select owner, repo, and branch.'); return; }
+
+      const since = $('since').value ? new Date($('since').value).toISOString() : '';
+      const until = $('until').value ? new Date($('until').value).toISOString() : '';
+      const maxCommits = Math.min(Math.max(parseInt($('maxCommits').value||'500',10), 50), 5000);
+      const pathPrefix = $('pathFilter').value.trim();
+      const excludeTerms = ($('exclude').value || '').split(',').map(s=>s.trim()).filter(Boolean);
+      const depth = parseInt($('dirDepth').value||'0',10);
+      const metric = $('aggMetric').value;
+
+      try {
+        setStatus('Fetching commit list…', true);
+        let commits = []; let page = 1;
+        while (commits.length < maxCommits) {
+          let url = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${encodeURIComponent(branch)}&per_page=100&page=${page}`;
+          if (since) url += `&since=${encodeURIComponent(since)}`;
+          if (until) url += `&until=${encodeURIComponent(until)}`;
+          const batch = await gh(url);
+          commits = commits.concat(batch);
+          if (batch.length < 100) break;
+          page++; await sleep(120);
+        }
+        commits = commits.slice(0, maxCommits);
+        if (!commits.length) { setStatus('No commits found for parameters.'); return; }
+
+        // Collect authors with avatars
+        const authorSet = new Map();
+        lastAuthorInfoMap.clear();
+        for (const c of commits) {
+          const login = c.author?.login || '';
+          const avatar = c.author?.avatar_url || '';
+          const name = c.commit?.author?.name || login || 'unknown';
+          const key = login || name;
+          if (!key) continue;
+          const label = login ? `@${login}` : name;
+          authorSet.set(key, label);
+          lastAuthorInfoMap.set(key, { label, avatar });
+        }
+
+        // Populate authors select and chips
+        const prevSelValues = new Set([...$('authors').selectedOptions].map(o=>o.value));
+        const allOption = `<option value="" ${prevSelValues.size===0 || prevSelValues.has('') ? 'selected':''}>(All authors)</option>`;
+        const authorOptions = [...authorSet.entries()].sort((a,b)=> a[1].localeCompare(b[1]))
+          .map(([v, label])=> `<option value="${v}" ${prevSelValues.has(v)?'selected':''}>${label}</option>`).join('');
+        $('authors').innerHTML = allOption + authorOptions;
+        renderAuthorChips(lastAuthorInfoMap);
+
+        // Selected authors (empty => ALL)
+        const selectedAuthors = [...$('authors').selectedOptions].map(o=>o.value).filter(Boolean);
+        let filteredCommits = commits;
+        if (selectedAuthors.length) {
+          filteredCommits = commits.filter(c=>{
+            const login = c.author?.login || '';
+            const name = c.commit?.author?.name || login;
+            const key = login || name;
+            return selectedAuthors.includes(key);
+          });
+        }
+
+        setStatus(`Fetching ${filteredCommits.length} commit details…`, true);
+        const details = await mapLimit(filteredCommits, 6, async (c) => {
+          return await gh(`https://api.github.com/repos/${owner}/${repo}/commits/${c.sha}`);
+        });
+
+        // Trend (weekly)
+        const trend = new Map();
+        for (const d of details) {
+          const date = d.commit?.author?.date || d.commit?.committer?.date;
+          const wk = weekStartISO(date);
+          const count = (d.files||[]).length;
+          trend.set(wk, (trend.get(wk)||0)+count);
+        }
+        const trendLabels = [...trend.keys()].sort();
+        const trendCounts = trendLabels.map(k=>trend.get(k));
+        drawTrend(trendLabels, trendCounts);
+
+        // Aggregate per file/dir and track latest author
+        const mapAgg = new Map();
+        for (const d of details) {
+          const date = d.commit?.author?.date || d.commit?.committer?.date;
+          const lastLogin = d.author?.login || '';
+          const lastAvatar = d.author?.avatar_url || '';
+          const lastName = d.commit?.author?.name || lastLogin || 'unknown';
+          const lastKey = lastLogin || lastName;
+          const lastLabel = lastLogin ? `@${lastLogin}` : lastName;
+
+          for (const f of (d.files||[])) {
+            const path = f.filename;
+            if (pathPrefix && !path.startsWith(pathPrefix)) continue;
+            if (excludeTerms.some(t => t && path.includes(t))) continue;
+            const key = groupKey(path, depth);
+            if (!mapAgg.has(key)) mapAgg.set(key, { edits:0, additions:0, deletions:0, lastModifiedISO:'', lastSha:'', samplePath:path, lastAuthorKey:'', lastAuthorLabel:'', lastAuthorAvatar:'' });
+            const rec = mapAgg.get(key);
+            rec.edits += 1;
+            rec.additions += f.additions||0;
+            rec.deletions += f.deletions||0;
+            if (!rec.lastModifiedISO || new Date(date) > new Date(rec.lastModifiedISO)) {
+              rec.lastModifiedISO = date; rec.lastSha = d.sha; rec.samplePath = path;
+              rec.lastAuthorKey = lastKey; rec.lastAuthorLabel = lastLabel; rec.lastAuthorAvatar = lastAvatar;
+            }
+          }
+        }
+        const rowsAll = [...mapAgg.entries()].map(([file, data]) => ({ file, ...data }))
+          .sort((a,b)=> (b[metric] - a[metric]) || (b.edits - a.edits));
+        latestRows = rowsAll;
+
+        $('kpi-commits').textContent = filteredCommits.length.toString();
+        $('kpi-files').textContent = rowsAll.length.toString();
+        $('kpi-top').textContent = rowsAll[0]?.edits || 0;
+        $('kpi-period').textContent = `${$('since').value || '—'} → ${$('until').value || '—'}`;
+
+        // LOC (file size) for scatter — default
+        setStatus('Calculating LOC (file size)…', true);
+        await mapLimit(rowsAll.slice(0, 300), 6, async (r)=>{
+          if (fileSizeCache.has(r.samplePath)) return;
+          try {
+            const c = await gh(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(r.samplePath)}?ref=${encodeURIComponent(branch)}`);
+            if (Array.isArray(c)) { fileSizeCache.set(r.samplePath, { loc:0, fetchedAt:Date.now() }); return; }
+            const text = atob((c.content||'').replace(/\n/g,''));
+            const loc = (text.match(/\n/g)||[]).length + 1;
+            fileSizeCache.set(r.samplePath, { loc, fetchedAt:Date.now() });
+          } catch { fileSizeCache.set(r.samplePath, { loc:0, fetchedAt:Date.now() }); }
+        });
+        setStatus('');
+
+        drawScatter(rowsAll, { owner, repo, branch });
+
+        // Top 10 table
+        renderTable(rowsAll.slice(0,10), { owner, repo, branch, depth });
+
+        $('exportCsv').disabled = rowsAll.length===0;
+        setStatus(`Done. ${rowsAll.length} item(s) touched.`);
+      } catch (e) { console.error(e); setStatus('Error during analysis. See console.'); }
+    }
+
+    function renderTable(rows, ctx) {
+      const tbody = $('filesTbody');
+      if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" style="color:#94a3b8">No results.</td></tr>`; return; }
+      tbody.innerHTML = rows.map((r,i)=>{
+        const avatar = r.lastAuthorAvatar ? `<img class="avatar-lg" src="${r.lastAuthorAvatar}" alt="">` : `<span class="avatar-lg" style="display:inline-grid;place-items:center;background:#0b1220;border:1px solid var(--border)">👤</span>`;
+        return `
+        <tr data-file="${encodeURIComponent(r.samplePath)}" data-group="${encodeURIComponent(r.file)}" data-sha="${r.lastSha}">
+          <td>${i+1}</td>
+          <td style="max-width:480px;overflow:hidden;text-overflow:ellipsis"><code title="${r.file}">${r.file}</code></td>
+          <td><strong>${r.edits}</strong></td>
+          <td class="good">+${r.additions}</td>
+          <td class="bad">−${r.deletions}</td>
+          <td><span class="pill">${avatar}<span style="margin-left:6px">${r.lastAuthorLabel || '—'}</span></span></td>
+          <td>${fmtDate(r.lastModifiedISO)}</td>
+        </tr>`;
+      }).join('');
+      [...tbody.querySelectorAll('tr')].forEach(tr=>{
+        tr.addEventListener('click', async ()=>{
+          const depth = parseInt($('dirDepth').value||'0',10);
+          if (depth>0) {
+            $('fileContent').textContent = 'Preview disabled for grouped view (set directory depth to 0).';
+            $('fileDiff').textContent = '—';
+            return;
+          }
+          const file = decodeURIComponent(tr.dataset.file);
+          const sha = tr.dataset.sha;
+          const group = decodeURIComponent(tr.dataset.group);
+          await previewFile(ctx, file, sha, group);
+        });
+      });
+    }
+
+    async function previewFile({owner, repo, branch}, path, lastSha, label) {
+      $('fileContent').textContent = 'Loading file content…';
+      $('fileDiff').textContent = 'Loading recent diff…';
+      $('viewOnGitHub').href = `https://github.com/${owner}/${repo}/blob/${encodeURIComponent(branch)}/${path}`;
+      $('fileMeta').textContent = `${owner}/${repo}@${branch} — ${label || path}`;
+      try {
+        const content = await gh(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`);
+        if (Array.isArray(content)) $('fileContent').textContent = '(Path is a directory.)';
+        else {
+          const text = atob((content.content||'').replace(/\n/g,''));
+          $('fileContent').textContent = text;
+        }
+      } catch { $('fileContent').textContent = 'Could not load content (binary or insufficient permissions).'; }
+      try {
+        const detail = await gh(`https://api.github.com/repos/${owner}/${repo}/commits/${lastSha}`);
+        const f = (detail.files||[]).find(x=>x.filename===path);
+        $('fileDiff').innerHTML = colorizePatch(f?.patch || '');
+      } catch { $('fileDiff').textContent = 'Could not load diff.'; }
+    }
+
+    function exportCSV(){
+      if (!latestRows || !latestRows.length) return;
+      const header = ['path_or_group','edits','additions','deletions','last_modified_iso'];
+      const lines = [header.join(',')];
+      for (const r of latestRows){
+        const row = [r.file, r.edits, r.additions, r.deletions, r.lastModifiedISO]
+          .map(v=> typeof v==='string' && v.includes(',') ? '"'+v.replace(/""/g,'"')+'"' : v);
+        lines.push(row.join(','));
+      }
+      const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'churn.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Small concurrency limiter
+    async function mapLimit(items, limit, worker) {
+      const ret = []; let i = 0; let active = 0;
+      return await new Promise((resolve, reject) => {
+        const next = () => {
+          if (i === items.length && active === 0) return resolve(ret);
+          while (active < limit && i < items.length) {
+            const idx = i++; active++;
+            Promise.resolve(worker(items[idx], idx))
+              .then(v => { ret[idx] = v; active--; next(); })
+              .catch(e => reject(e));
+          }
+        };
+        next();
+      });
+    }
+
+    // Enable analyze button when possible
+    const obs = new MutationObserver(() => { $('analyze').disabled = !($('repo').value && $('branch').value); });
+    obs.observe($('repo'), { childList:true }); obs.observe($('branch'), { childList:true });
+  </script>
+</body>
+</html>
