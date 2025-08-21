@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>GitHub Repo Folder Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a22; --muted:#8ea1b3; --text:#e6ebf1; --accent:#79c0ff; --border:#232938;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family: ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--text); display:flex; height:100vh}
+  #sidebar{width:340px; min-width:260px; max-width:480px; border-right:1px solid var(--border); display:flex; flex-direction:column}
+  #controls{padding:10px; background:var(--panel); border-bottom:1px solid var(--border); display:grid; gap:6px}
+  #controls input{width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:#0b0e13; color:var(--text)}
+  #controls .row{display:grid; grid-template-columns:1fr 1fr; gap:6px}
+  #controls button{padding:8px 10px; border:1px solid var(--border); background:#0b0e13; color:var(--text); border-radius:8px; cursor:pointer}
+  #controls button:hover{border-color:#2f3a52}
+  #tree{flex:1; overflow:auto; padding:10px}
+  ul{list-style:none; padding-left:16px; margin:0}
+  li{margin:2px 0}
+  .folder>.label{font-weight:600; cursor:pointer}
+  .file{cursor:pointer}
+  .label{display:flex; align-items:center; gap:6px; padding:4px 6px; border-radius:6px}
+  .label:hover{background:#0b0e13}
+  .chev{width:0; height:0; border-left:5px solid var(--muted); border-top:4px solid transparent; border-bottom:4px solid transparent; transition:transform .15s}
+  .open>.label .chev{transform:rotate(90deg)}
+  .name{word-break:break-all}
+  #content{flex:1; overflow:auto; padding:12px}
+  iframe{width:100%; height:calc(100vh - 24px); border:none; background:white}
+  pre{background:#0b0e13; border:1px solid var(--border); padding:12px; border-radius:10px; overflow:auto}
+  .toolbar{display:flex; gap:8px; align-items:center; margin-top:6px}
+  .toolbar button{padding:6px 10px; border:1px solid var(--border); background:#0b0e13; color:var(--text); border-radius:8px; cursor:pointer}
+  .muted{color:var(--muted); font-size:0.92rem}
+  .tiny{font-size:0.85rem; color:var(--muted)}
+  .path{color:var(--accent)}
+</style>
+</head>
+<body>
+  <aside id="sidebar">
+    <div id="controls">
+      <input id="repo" placeholder="owner/repo (e.g. afrank84/DevOps-AutomationToolingV2)" />
+      <div class="row">
+        <input id="branch" placeholder="branch (e.g. main)" />
+        <input id="path" placeholder="root path (e.g. .site or . )" />
+      </div>
+      <div class="row">
+        <button id="loadBtn">Load</button>
+        <button id="expandAllBtn" title="Expand all">Expand</button>
+      </div>
+      <div class="row">
+        <button id="collapseAllBtn" title="Collapse all">Collapse</button>
+        <button id="copyUrlBtn" title="Copy shareable URL">Share URL</button>
+      </div>
+      <div class="tiny">Unauthenticated GitHub API: ~60 requests/hour limit.</div>
+    </div>
+    <div id="tree" class="muted">Enter repo info and click <b>Load</b>.</div>
+  </aside>
+
+  <main id="content">
+    <h2>Select a file</h2>
+    <p class="muted">.html files render in the preview. Other files show as text in a code block.</p>
+  </main>
+
+<script>
+const qs = (s, el=document)=>el.querySelector(s);
+const treeEl = qs('#tree');
+const contentEl = qs('#content');
+let allNodes = []; // for expand/collapse
+
+function savePrefs(repo, branch, path){
+  localStorage.setItem('ghv_prefs', JSON.stringify({repo, branch, path}));
+}
+function loadPrefs(){
+  try{ return JSON.parse(localStorage.getItem('ghv_prefs')||'{}'); }catch{return {}}
+}
+function getParams(){
+  const u = new URL(location.href);
+  return {
+    repo: u.searchParams.get('repo') || '',
+    branch: u.searchParams.get('branch') || '',
+    path: u.searchParams.get('path') || ''
+  };
+}
+function setParams(repo, branch, path){
+  const u = new URL(location.href);
+  u.searchParams.set('repo', repo);
+  u.searchParams.set('branch', branch);
+  u.searchParams.set('path', path);
+  history.replaceState(null, '', u.toString());
+}
+
+async function fetchDir(repo, branch, path){
+  const url = `https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
+  return res.json(); // array of items {type, name, path}
+}
+
+async function buildTree(repo, branch, rootPath){
+  treeEl.textContent = 'Loading...';
+  const root = { type:'dir', name: rootPath, path: rootPath, children: [] };
+
+  async function recurse(node){
+    const items = await fetchDir(repo, branch, node.path);
+    // sort dirs first, then files, alphabetically
+    items.sort((a,b)=>{
+      if (a.type!==b.type) return a.type==='dir' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    for(const it of items){
+      if (it.type === 'dir'){
+        const child = { type:'dir', name: it.name, path: it.path, children: [] };
+        node.children.push(child);
+        await recurse(child);
+      } else if (it.type === 'file'){
+        node.children.push({ type:'file', name: it.name, path: it.path });
+      }
+    }
+  }
+
+  await recurse(root);
+  treeEl.innerHTML = '';
+  allNodes = [];
+  renderNode(root, treeEl, true);
+}
+
+function renderNode(node, parentEl, forceOpen=false){
+  const ul = document.createElement('ul');
+  parentEl.appendChild(ul);
+
+  if (node.children){ // this is the root wrapper
+    for (const child of node.children){
+      addItem(child, ul, forceOpen);
+    }
+  }
+}
+
+function addItem(node, parentUl, open=false){
+  const li = document.createElement('li');
+  const label = document.createElement('div');
+  label.className = 'label';
+  const name = document.createElement('span');
+  name.className = 'name';
+  name.textContent = node.name;
+
+  if (node.type === 'dir'){
+    const chev = document.createElement('span'); chev.className = 'chev';
+    label.prepend(chev);
+    li.className = 'folder';
+    li.appendChild(label);
+    const sub = document.createElement('ul'); sub.style.display = open ? 'block' : 'none';
+    li.classList.toggle('open', open);
+    label.addEventListener('click', ()=> {
+      const isOpen = li.classList.toggle('open');
+      sub.style.display = isOpen ? 'block' : 'none';
+    });
+    label.appendChild(name);
+    parentUl.appendChild(li);
+    allNodes.push({li, sub});
+
+    if (node.children && node.children.length){
+      for (const c of node.children){
+        const childLi = addItem(c, sub, false);
+      }
+    }
+  } else {
+    li.className = 'file';
+    label.style.paddingLeft = '14px'; // align with folder items
+    li.appendChild(label);
+    label.appendChild(name);
+    label.addEventListener('click', ()=> openFile(node));
+    parentUl.appendChild(li);
+  }
+  return li;
+}
+
+async function openFile(fileNode){
+  const {repo, branch} = getCurrentInputs();
+  const url = `https://raw.githubusercontent.com/${repo}/${branch}/${fileNode.path}`;
+  contentEl.innerHTML = `<div class="muted">Loading <span class="path">${fileNode.path}</span>…</div>`;
+
+  try{
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Raw fetch ${res.status}`);
+    const text = await res.text();
+
+    if (fileNode.name.toLowerCase().endsWith('.html')){
+      // Render HTML safely with srcdoc
+      contentEl.innerHTML = `
+        <div class="toolbar">
+          <div class="tiny">Viewing: <span class="path">${fileNode.path}</span></div>
+          <button onclick="copyLink('${fileNode.path}')">Copy direct link</button>
+        </div>
+        <iframe sandbox="allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation"
+                srcdoc="${escapeHtmlAttr(text)}"></iframe>`;
+    } else {
+      contentEl.innerHTML = `
+        <div class="toolbar">
+          <div class="tiny">Viewing: <span class="path">${fileNode.path}</span></div>
+          <button onclick="copyLink('${fileNode.path}')">Copy direct link</button>
+        </div>
+        <pre><code>${escapeHtml(text)}</code></pre>`;
+    }
+  }catch(err){
+    contentEl.innerHTML = `<div class="muted">Failed to load <span class="path">${fileNode.path}</span>: ${escapeHtml(String(err))}</div>`;
+  }
+}
+
+function copyLink(path){
+  const {repo, branch} = getCurrentInputs();
+  const raw = `https://raw.githubusercontent.com/${repo}/${branch}/${path}`;
+  navigator.clipboard.writeText(raw);
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeHtmlAttr(s){
+  // For embedding into srcdoc attribute
+  return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+}
+
+function getCurrentInputs(){
+  return {
+    repo: qs('#repo').value.trim(),
+    branch: qs('#branch').value.trim(),
+    path: qs('#path').value.trim() || ''
+  };
+}
+
+qs('#loadBtn').addEventListener('click', async ()=>{
+  const {repo, branch, path} = getCurrentInputs();
+  if(!repo || !branch || !path){ alert('Please fill repo, branch, and path'); return; }
+  savePrefs(repo, branch, path);
+  setParams(repo, branch, path);
+  await buildTree(repo, branch, path);
+});
+
+qs('#expandAllBtn').addEventListener('click', ()=>{
+  for(const n of allNodes){ n.li.classList.add('open'); n.sub.style.display='block'; }
+});
+qs('#collapseAllBtn').addEventListener('click', ()=>{
+  for(const n of allNodes){ n.li.classList.remove('open'); n.sub.style.display='none'; }
+});
+qs('#copyUrlBtn').addEventListener('click', ()=>{
+  const {repo, branch, path} = getCurrentInputs();
+  setParams(repo, branch, path);
+  navigator.clipboard.writeText(location.href);
+});
+
+(function bootstrap(){
+  const params = getParams();
+  const prefs = loadPrefs();
+  qs('#repo').value = params.repo || prefs.repo || '';
+  qs('#branch').value = params.branch || prefs.branch || 'main';
+  qs('#path').value = params.path || prefs.path || '';
+  if (qs('#repo').value && qs('#branch').value && qs('#path').value){
+    buildTree(qs('#repo').value, qs('#branch').value, qs('#path').value)
+      .catch(err=>treeEl.textContent = 'Error: ' + err.message);
+  }
+})();
+</script>
+</body>
+</html>
