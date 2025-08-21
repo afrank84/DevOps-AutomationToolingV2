@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Folder Structure Viewer</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    margin: 0;
+  }
+  #sidebar {
+    width: 300px;
+    overflow-y: auto;
+    background: #f5f5f5;
+    padding: 10px;
+    border-right: 1px solid #ccc;
+  }
+  #content {
+    flex: 1;
+    padding: 10px;
+    overflow: auto;
+  }
+  ul { list-style-type: none; padding-left: 15px; }
+  li { cursor: pointer; margin: 4px 0; }
+  li.folder { font-weight: bold; }
+  iframe {
+    width: 100%;
+    height: 95vh;
+    border: none;
+  }
+  pre {
+    background: #222;
+    color: #eee;
+    padding: 10px;
+    overflow-x: auto;
+  }
+</style>
+</head>
+<body>
+  <div id="sidebar">
+    <input type="file" id="folderInput" webkitdirectory multiple>
+    <div id="fileTree"></div>
+  </div>
+  <div id="content">
+    <h2>Select a file</h2>
+  </div>
+
+<script>
+function buildTree(files) {
+  let root = {};
+  for (let file of files) {
+    let pathParts = file.webkitRelativePath.split("/");
+    let current = root;
+    for (let i = 0; i < pathParts.length; i++) {
+      let part = pathParts[i];
+      if (i === pathParts.length - 1) {
+        current[part] = file;
+      } else {
+        current[part] = current[part] || {};
+        current = current[part];
+      }
+    }
+  }
+  return root;
+}
+
+function renderTree(node, parent) {
+  let ul = document.createElement("ul");
+  for (let key in node) {
+    let li = document.createElement("li");
+    if (node[key] instanceof File) {
+      li.textContent = key;
+      li.onclick = () => displayFile(node[key]);
+    } else {
+      li.textContent = key;
+      li.classList.add("folder");
+      li.onclick = (e) => { e.stopPropagation(); li.classList.toggle("open"); };
+      renderTree(node[key], li);
+    }
+    ul.appendChild(li);
+  }
+  parent.appendChild(ul);
+}
+
+function displayFile(file) {
+  const content = document.getElementById("content");
+  const reader = new FileReader();
+  if (file.name.endsWith(".html")) {
+    reader.onload = () => {
+      content.innerHTML = `<iframe srcdoc="${reader.result.replace(/"/g, "&quot;")}"></iframe>`;
+    };
+    reader.readAsText(file);
+  } else {
+    reader.onload = () => {
+      content.innerHTML = `<pre><code>${escapeHtml(reader.result)}</code></pre>`;
+    };
+    reader.readAsText(file);
+  }
+}
+
+function escapeHtml(str) {
+  return str.replace(/[&<>'"]/g, tag => (
+    {"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[tag]
+  ));
+}
+
+document.getElementById("folderInput").addEventListener("change", (e) => {
+  const files = e.target.files;
+  const tree = buildTree(files);
+  const fileTree = document.getElementById("fileTree");
+  fileTree.innerHTML = "";
+  renderTree(tree, fileTree);
+});
+</script>
+</body>
+</html>
