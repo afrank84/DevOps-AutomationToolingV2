@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <title>DevOps Automation Tooling – Code Viewer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Markdown renderer for .md files -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
   <style>
     :root {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -156,6 +160,9 @@
       font-size: 0.75rem;
       color: #9ca3af;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
     }
 
     .toggle-indicator {
@@ -164,6 +171,7 @@
       color: #9ca3af;
     }
 
+    /* Generic code blocks */
     pre {
       margin: 0;
       padding: 0.75rem;
@@ -171,12 +179,14 @@
       color: #e5e7eb;
       overflow-x: auto;
       font-size: 0.8rem;
-      line-height: 1.4;
+      line-height: 1.45;
+      white-space: pre-wrap;   /* key: preserve indentation & wrapping */
     }
 
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      white-space: pre;
+      white-space: pre-wrap;   /* preserve Markdown spacing */
+      word-break: break-word;
     }
 
     .hidden {
@@ -197,6 +207,81 @@
       font-size: 0.8rem;
       color: #9ca3af;
       margin-top: 0.3rem;
+    }
+
+    /* Markdown rendering for .md files */
+    .markdown {
+      padding: 0.9rem 1rem;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .markdown h1,
+    .markdown h2,
+    .markdown h3,
+    .markdown h4 {
+      margin: 0.6rem 0 0.4rem;
+      font-weight: 600;
+    }
+
+    .markdown h1 { font-size: 1.3rem; }
+    .markdown h2 { font-size: 1.15rem; }
+    .markdown h3 { font-size: 1rem; }
+
+    .markdown p {
+      margin: 0.35rem 0 0.5rem;
+    }
+
+    .markdown ul,
+    .markdown ol {
+      padding-left: 1.4rem;
+      margin: 0.35rem 0 0.6rem;
+    }
+
+    .markdown li {
+      margin: 0.15rem 0;
+    }
+
+    .markdown code {
+      background: #1e293b;
+      padding: 0.1rem 0.25rem;
+      border-radius: 0.25rem;
+      font-size: 0.85em;
+    }
+
+    .markdown pre {
+      background: #111827;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 0.5rem 0;
+    }
+
+    .markdown pre code {
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+      white-space: pre;
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .markdown hr {
+      border: none;
+      border-top: 1px solid #1f2937;
+      margin: 0.75rem 0;
+    }
+
+    a,
+    .markdown a {
+      color: #60a5fa;
+      text-decoration: none;
+    }
+
+    a:hover,
+    .markdown a:hover {
+      text-decoration: underline;
     }
 
     @media (max-width: 800px) {
@@ -246,13 +331,11 @@
       <div class="status" id="status">Loading tree…</div>
     </div>
 
-    <div id="content" class="content">
-      <!-- Sections get injected here -->
-    </div>
+    <div id="content" class="content"></div>
   </main>
 
   <script>
-    // Configuration for your repo
+    // Repo configuration
     const owner = "afrank84";
     const repo = "DevOps-AutomationToolingV2";
     const branch = "main";
@@ -314,21 +397,25 @@
       header.appendChild(pathEl);
       header.appendChild(metaEl);
 
+      const bodyWrapper = document.createElement("div");
+      // For non-markdown, we'll insert <pre><code>; for markdown we'll replace with .markdown
+
       const pre = document.createElement("pre");
       const code = document.createElement("code");
       code.textContent = "Loading " + path + "…";
       pre.appendChild(code);
+      bodyWrapper.appendChild(pre);
 
       header.addEventListener("click", () => {
-        const collapsed = pre.classList.toggle("hidden");
+        const collapsed = bodyWrapper.classList.toggle("hidden");
         const indicator = metaEl.querySelector(".toggle-indicator");
         indicator.textContent = collapsed ? "[expand]" : "[collapse]";
       });
 
       section.appendChild(header);
-      section.appendChild(pre);
+      section.appendChild(bodyWrapper);
 
-      return { section, codeEl: code, preEl: pre };
+      return { section, codeEl: code, bodyWrapper };
     }
 
     function populateSidebar(files) {
@@ -363,21 +450,14 @@
       const items = fileListEl.querySelectorAll(".file-item");
       items.forEach((li, idx) => {
         const file = allFiles[idx];
-        if (!term || file.path.toLowerCase().includes(term)) {
-          li.style.display = "";
-          const section = document.getElementById("file-" + idx);
-          if (section) section.style.display = "";
-        } else {
-          li.style.display = "none";
-          const section = document.getElementById("file-" + idx);
-          if (section) section.style.display = "none";
-        }
+        const match = !term || file.path.toLowerCase().includes(term);
+        li.style.display = match ? "" : "none";
+        const section = document.getElementById("file-" + idx);
+        if (section) section.style.display = match ? "" : "none";
       });
     }
 
-    fileSearchEl.addEventListener("input", () => {
-      applyFileFilter();
-    });
+    fileSearchEl.addEventListener("input", applyFileFilter);
 
     async function init() {
       try {
@@ -412,15 +492,13 @@
 
         populateSidebar(files);
 
-        // Create sections first
         const fileSections = [];
         files.forEach((file, idx) => {
-          const { section, codeEl } = createFileSection(file.path, idx);
+          const { section, codeEl, bodyWrapper } = createFileSection(file.path, idx);
           contentEl.appendChild(section);
-          fileSections[idx] = { codeEl };
+          fileSections[idx] = { codeEl, bodyWrapper, path: file.path };
         });
 
-        // Then fetch contents sequentially (simple, safe for rate limits)
         let loaded = 0;
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
@@ -436,7 +514,20 @@
 
           try {
             const text = await fetchText(rawUrl);
-            fileSections[i].codeEl.textContent = text;
+            const sectionInfo = fileSections[i];
+
+            if (file.path.toLowerCase().endsWith(".md")) {
+              // Render Markdown instead of raw text
+              const mdContainer = document.createElement("div");
+              mdContainer.className = "markdown";
+              mdContainer.innerHTML = marked.parse(text);
+              // Replace whatever is inside bodyWrapper with rendered markdown
+              sectionInfo.bodyWrapper.innerHTML = "";
+              sectionInfo.bodyWrapper.appendChild(mdContainer);
+            } else {
+              // Plain text / code file
+              sectionInfo.codeEl.textContent = text;
+            }
           } catch (err) {
             fileSections[i].codeEl.textContent =
               "Error loading this file:\n" + err.message;
