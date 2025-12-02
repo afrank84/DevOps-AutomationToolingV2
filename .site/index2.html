@@ -17,18 +17,26 @@
 
     body {
       margin: 0;
+      /* stay flex, but we’ll lock sidebar width more strictly */
       display: flex;
       min-height: 100vh;
     }
 
+    /* sidebar: fixed width, doesn’t shrink, stays on top & stuck to left */
     .sidebar {
-      width: 260px;
-      max-width: 40vw;
+      flex: 0 0 260px;          /* don't let flexbox shrink it */
+      max-width: 260px;         /* keep it fixed on desktop */
       background: #020617;
       border-right: 1px solid #1f2937;
       padding: 1rem;
       box-sizing: border-box;
       overflow-y: auto;
+    
+      position: sticky;         /* stay visible while scrolling */
+      top: 0;
+      align-self: flex-start;   /* needed with sticky inside flex */
+      height: 100vh;
+      z-index: 2;               /* ensure it’s above the main content */
     }
 
     .sidebar h1 {
@@ -88,13 +96,15 @@
       border-color: #4b5563;
     }
 
+    /* main: the flexible area, not allowed to push over sidebar */
     .main {
-      flex: 1;
+      flex: 1 1 auto;
+      min-width: 0;             /* prevent weird flex overflow pushing */
       display: flex;
       flex-direction: column;
       max-height: 100vh;
     }
-
+    
     .topbar {
       padding: 0.75rem 1rem;
       border-bottom: 1px solid #1f2937;
