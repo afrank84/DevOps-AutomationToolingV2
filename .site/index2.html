@@ -5,7 +5,22 @@
   <title>DevOps Automation Tooling – Code Viewer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Markdown renderer for .md files -->
+  <!-- Prism.js Syntax Highlighting -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-powershell.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+
+  <!-- Markdown renderer -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
@@ -17,26 +32,25 @@
 
     body {
       margin: 0;
-      /* stay flex, but we’ll lock sidebar width more strictly */
       display: flex;
       min-height: 100vh;
     }
 
-    /* sidebar: fixed width, doesn’t shrink, stays on top & stuck to left */
+    /* Sidebar fixed width, sticky, non-overlapping */
     .sidebar {
-      flex: 0 0 260px;          /* don't let flexbox shrink it */
-      max-width: 260px;         /* keep it fixed on desktop */
+      flex: 0 0 260px;
+      max-width: 260px;
       background: #020617;
       border-right: 1px solid #1f2937;
       padding: 1rem;
       box-sizing: border-box;
       overflow-y: auto;
-    
-      position: sticky;         /* stay visible while scrolling */
+
+      position: sticky;
       top: 0;
-      align-self: flex-start;   /* needed with sticky inside flex */
+      align-self: flex-start;
       height: 100vh;
-      z-index: 2;               /* ensure it’s above the main content */
+      z-index: 2;
     }
 
     .sidebar h1 {
@@ -96,15 +110,14 @@
       border-color: #4b5563;
     }
 
-    /* main: the flexible area, not allowed to push over sidebar */
     .main {
       flex: 1 1 auto;
-      min-width: 0;             /* prevent weird flex overflow pushing */
+      min-width: 0;
       display: flex;
       flex-direction: column;
       max-height: 100vh;
     }
-    
+
     .topbar {
       padding: 0.75rem 1rem;
       border-bottom: 1px solid #1f2937;
@@ -181,7 +194,7 @@
       color: #9ca3af;
     }
 
-    /* Generic code blocks */
+    /* Generic code blocks (Prism will style colors) */
     pre {
       margin: 0;
       padding: 0.75rem;
@@ -190,12 +203,13 @@
       overflow-x: auto;
       font-size: 0.8rem;
       line-height: 1.45;
-      white-space: pre-wrap;   /* key: preserve indentation & wrapping */
+      white-space: pre-wrap;
     }
 
     code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      white-space: pre-wrap;   /* preserve Markdown spacing */
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+      white-space: pre-wrap;
       word-break: break-word;
     }
 
@@ -234,9 +248,15 @@
       font-weight: 600;
     }
 
-    .markdown h1 { font-size: 1.3rem; }
-    .markdown h2 { font-size: 1.15rem; }
-    .markdown h3 { font-size: 1rem; }
+    .markdown h1 {
+      font-size: 1.3rem;
+    }
+    .markdown h2 {
+      font-size: 1.15rem;
+    }
+    .markdown h3 {
+      font-size: 1rem;
+    }
 
     .markdown p {
       margin: 0.35rem 0 0.5rem;
@@ -294,16 +314,28 @@
       text-decoration: underline;
     }
 
+    /* Make Prism background match our dark theme */
+    .token.comment,
+    .token.prolog,
+    .token.doctype,
+    .token.cdata {
+      color: #6b7280;
+    }
+
     @media (max-width: 800px) {
       body {
         flex-direction: column;
       }
+
       .sidebar {
+        position: static;
         width: 100%;
         max-width: 100%;
+        height: auto;
         border-right: none;
         border-bottom: 1px solid #1f2937;
       }
+
       .main {
         max-height: none;
       }
@@ -351,9 +383,19 @@
     const branch = "main";
 
     const excludedExtensions = [
-      ".png", ".jpg", ".jpeg", ".gif", ".ico",
-      ".pdf", ".zip", ".gz", ".7z", ".exe",
-      ".dll", ".so", ".pdb"
+      ".png",
+      ".jpg",
+      ".jpeg",
+      ".gif",
+      ".ico",
+      ".pdf",
+      ".zip",
+      ".gz",
+      ".7z",
+      ".exe",
+      ".dll",
+      ".so",
+      ".pdb"
     ];
 
     const statusEl = document.getElementById("status");
@@ -369,7 +411,7 @@
 
     function isExcluded(path) {
       const lower = path.toLowerCase();
-      return excludedExtensions.some(ext => lower.endsWith(ext));
+      return excludedExtensions.some((ext) => lower.endsWith(ext));
     }
 
     async function fetchJson(url) {
@@ -408,7 +450,6 @@
       header.appendChild(metaEl);
 
       const bodyWrapper = document.createElement("div");
-      // For non-markdown, we'll insert <pre><code>; for markdown we'll replace with .markdown
 
       const pre = document.createElement("pre");
       const code = document.createElement("code");
@@ -442,7 +483,7 @@
           e.preventDefault();
           document
             .querySelectorAll(".file-link.active")
-            .forEach(el => el.classList.remove("active"));
+            .forEach((el) => el.classList.remove("active"));
           a.classList.add("active");
           const target = document.getElementById("file-" + idx);
           if (target) {
@@ -469,6 +510,21 @@
 
     fileSearchEl.addEventListener("input", applyFileFilter);
 
+    // Map file extensions to Prism language ids
+    function getPrismLanguageForPath(path) {
+      const lower = path.toLowerCase();
+      if (lower.endsWith(".ps1")) return "powershell";
+      if (lower.endsWith(".sh") || lower.endsWith(".bash")) return "bash";
+      if (lower.endsWith(".py")) return "python";
+      if (lower.endsWith(".yaml") || lower.endsWith(".yml")) return "yaml";
+      if (lower.endsWith(".json")) return "json";
+      if (lower.endsWith(".md")) return "markdown";
+      if (lower.endsWith(".ts")) return "typescript";
+      if (lower.endsWith(".js")) return "javascript";
+      // generic fallback
+      return "none";
+    }
+
     async function init() {
       try {
         setStatus("Fetching repository tree…");
@@ -487,8 +543,8 @@
         }
 
         const files = treeData.tree
-          .filter(item => item.type === "blob")
-          .filter(item => !isExcluded(item.path))
+          .filter((item) => item.type === "blob")
+          .filter((item) => !isExcluded(item.path))
           .sort((a, b) => a.path.localeCompare(b.path));
 
         allFiles = files;
@@ -525,18 +581,34 @@
           try {
             const text = await fetchText(rawUrl);
             const sectionInfo = fileSections[i];
+            const path = file.path.toLowerCase();
 
-            if (file.path.toLowerCase().endsWith(".md")) {
-              // Render Markdown instead of raw text
+            if (path.endsWith(".md")) {
+              // Render Markdown
               const mdContainer = document.createElement("div");
               mdContainer.className = "markdown";
               mdContainer.innerHTML = marked.parse(text);
-              // Replace whatever is inside bodyWrapper with rendered markdown
+
+              // Highlight fenced code blocks inside Markdown
+              mdContainer.querySelectorAll("pre code").forEach((block) => {
+                // Try to preserve language from ```lang fences if present
+                const classList = block.className || "";
+                if (!/language-/.test(classList)) {
+                  block.classList.add("language-markdown");
+                }
+                Prism.highlightElement(block);
+              });
+
               sectionInfo.bodyWrapper.innerHTML = "";
               sectionInfo.bodyWrapper.appendChild(mdContainer);
             } else {
-              // Plain text / code file
+              // Plain code / text file with Prism highlighting
+              const lang = getPrismLanguageForPath(file.path);
+              if (lang && lang !== "none") {
+                sectionInfo.codeEl.className = "language-" + lang;
+              }
               sectionInfo.codeEl.textContent = text;
+              Prism.highlightElement(sectionInfo.codeEl);
             }
           } catch (err) {
             fileSections[i].codeEl.textContent =
