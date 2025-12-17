@@ -6,25 +6,28 @@ use HTTP::Tiny;
 use JSON::PP qw(decode_json);
 use Time::HiRes qw(sleep);
 
-# Steam Store endpoints (no API key)
 my $FEATURED_URL = 'https://store.steampowered.com/api/featuredcategories';
 my $APPDETAILS   = 'https://store.steampowered.com/api/appdetails';
 
-# Co-op category IDs seen in appdetails->data->categories
-# 1: Co-op, 37: Local Co-op, 38: Online Co-op, 39: Shared/Split Screen Co-op
-my %COOP_CAT = map { $_ => 1 } (1, 37, 38, 39);
+# Co-op category IDs from appdetails->data->categories
+my %COOP_CAT = (
+  1  => 'Co-op',
+  37 => 'Local Co-op',
+  38 => 'Online Co-op',
+  39 => 'Split/Shared Screen Co-op',
+);
 
-# Tune these if you want to be gentler to Steam
-my $BATCH_SIZE    = 50;     # appids per appdetails request
-my $REQUEST_DELAY = 0.25;   # seconds between appdetails requests
+my $REQUEST_DELAY = 0.20;   # be polite
+my $CC            = 'us';   # country code can reduce weird edge cases
+my $LANG          = 'english';
 
 my $http = HTTP::Tiny->new(
-  agent      => "core-perl-steam-coop-discounts/1.0",
+  agent      => 'perl-steam-coop/1.0',
   timeout    => 20,
   verify_SSL => 1,
 );
 
-sub http_get_json {
+sub get_json {
   my ($url) = @_;
   my $res = $http->get($url);
   die "HTTP GET failed ($url): $res->{status} $res->{reason}\n"
@@ -41,82 +44,62 @@ sub uniq {
   return grep { !$seen{$_}++ } @_;
 }
 
-sub chunk {
-  my ($arr_ref, $size) = @_;
-  my @chunks;
-  for (my $i = 0; $i < @$arr_ref; $i += $size) {
-    my $end = $i + $size - 1;
-    $end = $#$arr_ref if $end > $#$arr_ref;
-    push @chunks, [ @{$arr_ref}[$i..$end] ];
-  }
-  return @chunks;
-}
+print "\n=== Steam: Co-op Games Currently On Sale ===\n\n";
 
-# 1) Get discounted appids from featured categories
-my $featured = http_get_json($FEATURED_URL);
+# 1) Pull discounted appids from Steam front-page buckets
+my $featured = get_json($FEATURED_URL);
 
-my @discount_appids;
+my @appids;
 for my $bucket (qw(specials discounted)) {
-  next unless exists $featured->{$bucket} && ref($featured->{$bucket}{items}) eq 'ARRAY';
+  next unless $featured->{$bucket} && ref($featured->{$bucket}{items}) eq 'ARRAY';
   for my $item (@{ $featured->{$bucket}{items} }) {
     next unless defined $item->{id} && $item->{id} =~ /^\d+$/;
-    # These lists are already "discount-focused", but keep this check anyway.
     my $dp = $item->{discount_percent} // 0;
-    push @discount_appids, $item->{id} if $dp > 0;
+    push @appids, $item->{id} if $dp > 0;
   }
 }
 
-@discount_appids = uniq(@discount_appids);
-die "No discounted appids found right now.\n" unless @discount_appids;
+@appids = uniq(@appids);
+die "No discounted games found right now.\n" unless @appids;
 
-# CSV header
-print "appid,name,discount_percent,final_price,coop_flags,store_url\n";
+# 2) For each app, call appdetails with a SINGLE appid (avoids 400s)
+for my $appid (@appids) {
+  my $url = $APPDETAILS
+          . "?appids=$appid"
+          . "&filters=basic,categories,price_overview"
+          . "&cc=$CC"
+          . "&l=$LANG";
 
-# 2) Batch appdetails calls
-my @batches = chunk(\@discount_appids, $BATCH_SIZE);
+  my $payload;
+  eval { $payload = get_json($url); 1 } or do {
+    warn "Skipping appid $appid (request failed)\n";
+    sleep($REQUEST_DELAY);
+    next;
+  };
 
-BATCH:
-for my $batch (@batches) {
-  my $appids = join(',', @$batch);
+  my $entry = $payload->{$appid};
+  next unless $entry && $entry->{success};
 
-  # Request only what we need to keep payload down
-  my $url = $APPDETAILS . "?appids=$appids&filters=basic,categories,price_overview";
-  my $details = http_get_json($url);
+  my $d = $entry->{data} || {};
+  my $po = $d->{price_overview} || {};
+  my $discount = $po->{discount_percent} // 0;
+  next unless $discount > 0;
 
-  for my $appid (@$batch) {
-    my $entry = $details->{$appid};
-    next unless $entry && $entry->{success};
-
-    my $data = $entry->{data} || {};
-    my $name = $data->{name} // "";
-    $name =~ s/"/""/g; # CSV escaping
-
-    my $po = $data->{price_overview} || {};
-    my $discount = $po->{discount_percent} // 0;
-    next unless $discount > 0;
-
-    # co-op detection via categories
-    my @cats = @{ $data->{categories} || [] };
-    my %found;
-    for my $c (@cats) {
-      next unless $c && defined $c->{id};
-      if ($COOP_CAT{$c->{id}}) {
-        $found{$c->{id}} = $c->{description} // "Co-op";
-      }
-    }
-    next unless %found;
-
-    # Price info: final is usually in cents (USD), but can vary by region/currency.
-    my $final = defined $po->{final} ? $po->{final} : "";
-    my $final_fmt = ($final ne "" && $final =~ /^\d+$/) ? sprintf("%.2f", $final/100) : "";
-
-    my @flags = map { $found{$_} } sort { $a <=> $b } keys %found;
-    my $flags_str = join(" | ", @flags);
-    $flags_str =~ s/"/""/g;
-
-    my $store_url = "https://store.steampowered.com/app/$appid/";
-    print qq("$appid","$name","$discount","$final_fmt","$flags_str","$store_url"\n);
+  my @coop;
+  for my $c (@{ $d->{categories} || [] }) {
+    next unless $c && defined $c->{id};
+    push @coop, $COOP_CAT{$c->{id}} if $COOP_CAT{$c->{id}};
   }
+  next unless @coop;
+
+  print "----------------------------------------\n";
+  print "Name     : " . ($d->{name} // '(unknown)') . "\n";
+  print "AppID    : $appid\n";
+  print "Discount : $discount%\n";
+  print "Co-op    : " . join(', ', uniq(@coop)) . "\n";
+  print "URL      : https://store.steampowered.com/app/$appid/\n";
 
   sleep($REQUEST_DELAY);
 }
+
+print "\nDone.\n";
