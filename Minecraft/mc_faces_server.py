@@ -7,7 +7,7 @@ What it does
 - If the server exposes player sample names, it renders a web page showing:
   - who is online
   - each player's face (cropped from their skin)
-- Runs a small local web server on a non-common port (default 8765).
+- Runs a small web server on a non-common port (default 8765).
 
 Install
   python3 -m pip install mcstatus requests pillow
@@ -382,11 +382,16 @@ class McFacesHandler(BaseHTTPRequestHandler):
             _cache_set(_face_png_cache, cache_key, face_png)
             self._send_png(200, face_png)
         except Exception:
-            # 1x1 transparent png if anything fails
             transparent_1x1 = base64.b64decode(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/6X9o3sAAAAASUVORK5CYII="
             )
             self._send_png(200, transparent_1x1)
+
+    def _safe_write(self, data: bytes):
+        try:
+            self.wfile.write(data)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def _send_html(self, code: int, content: str):
         data = content.encode("utf-8")
@@ -394,7 +399,7 @@ class McFacesHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
-        self.wfile.write(data)
+        self._safe_write(data)
 
     def _send_text(self, code: int, content: str):
         data = content.encode("utf-8")
@@ -402,7 +407,7 @@ class McFacesHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/plain; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
-        self.wfile.write(data)
+        self._safe_write(data)
 
     def _send_png(self, code: int, png_bytes: bytes):
         self.send_response(code)
@@ -410,7 +415,7 @@ class McFacesHandler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(png_bytes)))
         self.end_headers()
-        self.wfile.write(png_bytes)
+        self._safe_write(png_bytes)
 
     def log_message(self, fmt, *args):
         return
