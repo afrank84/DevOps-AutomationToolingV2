@@ -1,4 +1,28 @@
 #!/usr/bin/env python3
+"""
+Minecraft Online Players + Faces Web Server (Java Edition)
+
+What it does
+- Polls a Minecraft Java server using STATUS ping (server.status()).
+- If the server exposes player sample names, it renders a web page showing:
+  - who is online
+  - each player's face (cropped from their skin)
+- Runs a small local web server on a non-common port (default 8765).
+
+Install
+  python3 -m pip install mcstatus requests pillow
+
+Run
+  python3 mc_faces_server.py --host YOUR_SERVER_IP --port 25565 --web-port 8765
+
+Open
+  http://localhost:8765/
+
+Notes
+- Many servers hide player names; if status.players.sample is None, you'll only get counts.
+- This script uses Mojang + sessionserver APIs, which apply to Java Edition.
+"""
+
 import argparse
 import base64
 import html
@@ -16,8 +40,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 DEFAULT_REFRESH_SECONDS = 10
 HTTP_TIMEOUT = 10
 
-# Simple in-memory caches with timestamps
-_name_to_uuid_cache = {}       # name -> (uuid, ts)
+# Caches (in-memory)
+_name_to_uuid_cache = {}       # name.lower() -> (uuid, ts)
 _uuid_to_skinurl_cache = {}    # uuid -> (skin_url, ts)
 _face_png_cache = {}           # (uuid, size, hat) -> (png_bytes, ts)
 
@@ -93,10 +117,9 @@ def download_bytes(url: str) -> bytes:
 
 def face_png_from_skin(skin_png_bytes: bytes, size: int = 64, include_hat: bool = True) -> bytes:
     """
-    Returns PNG bytes for a player's face:
-    - Base face: 8x8 at (8,8)-(16,16)
-    - Hat layer: 8x8 at (40,8)-(48,16)
-    Scales to size x size with nearest-neighbor.
+    Skin layout (classic):
+      - Face/base: (8,8)-(16,16)
+      - Hat/outer: (40,8)-(48,16)
     """
     skin = Image.open(BytesIO(skin_png_bytes)).convert("RGBA")
 
@@ -112,26 +135,36 @@ def face_png_from_skin(skin_png_bytes: bytes, size: int = 64, include_hat: bool 
     return out.getvalue()
 
 
-def get_online_player_names(mc_host: str, mc_port: int):
+def get_status(mc_host: str, mc_port: int):
     """
-    Uses server query to get player names.
-    Many servers disable this. If disabled, you will not get names here.
+    STATUS ping. This is what the Minecraft client uses for the server list.
+    More commonly allowed than Query.
     """
     server = JavaServer(mc_host, mc_port)
-    q = server.query()
-    players = getattr(q, "players", None)
+
+    # Some mcstatus versions accept timeout=..., some don't.
+    # Try with timeout first; fall back if needed.
+    try:
+        return server.status(timeout=3)
+    except TypeError:
+        return server.status()
+
+
+def get_online_player_names_from_status(status_obj):
+    """
+    Extract names from status.players.sample if present.
+    Returns list[str].
+    """
+    sample = getattr(status_obj.players, "sample", None)
+    if not sample:
+        return []
 
     names = []
+    for p in sample:
+        n = getattr(p, "name", None)
+        if n:
+            names.append(n)
 
-    if players is None:
-        return names
-
-    if getattr(players, "names", None):
-        names = list(players.names)
-    elif getattr(players, "sample", None):
-        names = [p.name for p in players.sample if getattr(p, "name", None)]
-
-    # Deduplicate while preserving order
     seen = set()
     out = []
     for n in names:
@@ -142,7 +175,7 @@ def get_online_player_names(mc_host: str, mc_port: int):
 
 
 class McFacesHandler(BaseHTTPRequestHandler):
-    server_version = "McFacesHTTP/1.0"
+    server_version = "McFacesHTTP/1.1"
 
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -167,25 +200,40 @@ class McFacesHandler(BaseHTTPRequestHandler):
         mc_host = self.server.mc_host
         mc_port = self.server.mc_port
 
-        try:
-            names = get_online_player_names(mc_host, mc_port)
-            error = None
-        except Exception as e:
-            names = []
-            error = str(e)
-
         refresh = int(qs.get("refresh", [DEFAULT_REFRESH_SECONDS])[0])
         refresh = max(3, min(refresh, 120))
 
         title = f"Minecraft Online Players ({mc_host}:{mc_port})"
         escaped_title = html.escape(title)
 
+        online = None
+        max_players = None
+        names = []
+        error = None
+
+        try:
+            status = get_status(mc_host, mc_port)
+            online = getattr(status.players, "online", None)
+            max_players = getattr(status.players, "max", None)
+            names = get_online_player_names_from_status(status)
+        except Exception as e:
+            error = str(e)
+
         rows = []
+
         if error:
-            rows.append(f"<div class='error'>Query error: {html.escape(error)}</div>")
+            rows.append(f"<div class='error'>Status error: {html.escape(error)}</div>")
+
+        if online is None:
+            rows.append("<div class='empty'>Could not read player count.</div>")
+        else:
+            if max_players is None:
+                rows.append(f"<div class='count'>Players online: {online}</div>")
+            else:
+                rows.append(f"<div class='count'>Players online: {online} / {max_players}</div>")
 
         if not names:
-            rows.append("<div class='empty'>No player names available (nobody online, or server query hides names).</div>")
+            rows.append("<div class='empty'>No player names available (server hides names, or none online).</div>")
         else:
             rows.append("<div class='grid'>")
             for name in names:
@@ -231,6 +279,13 @@ class McFacesHandler(BaseHTTPRequestHandler):
       font-size: 13px;
       color: #b7b7bd;
     }}
+    .count {{
+      background: #141416;
+      border: 1px solid #232327;
+      padding: 10px;
+      border-radius: 10px;
+      display: inline-block;
+    }}
     .grid {{
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -264,6 +319,7 @@ class McFacesHandler(BaseHTTPRequestHandler):
       padding: 10px;
       border-radius: 10px;
       color: #ffd6d6;
+      margin-bottom: 10px;
     }}
     .empty {{
       background: #141416;
@@ -271,6 +327,7 @@ class McFacesHandler(BaseHTTPRequestHandler):
       padding: 10px;
       border-radius: 10px;
       color: #b7b7bd;
+      margin-top: 10px;
     }}
     a {{
       color: #9ecbff;
@@ -312,6 +369,7 @@ class McFacesHandler(BaseHTTPRequestHandler):
         try:
             uuid = mojang_uuid_from_name(name)
             cache_key = (uuid, size, hat)
+
             cached_png = _cache_get(_face_png_cache, cache_key)
             if cached_png:
                 self._send_png(200, cached_png)
@@ -320,10 +378,11 @@ class McFacesHandler(BaseHTTPRequestHandler):
             skin_url = skin_url_from_uuid(uuid)
             skin_bytes = download_bytes(skin_url)
             face_png = face_png_from_skin(skin_bytes, size=size, include_hat=hat)
+
             _cache_set(_face_png_cache, cache_key, face_png)
             self._send_png(200, face_png)
-        except Exception as e:
-            # Return a minimal 1x1 transparent png on failure
+        except Exception:
+            # 1x1 transparent png if anything fails
             transparent_1x1 = base64.b64decode(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/6X9o3sAAAAASUVORK5CYII="
             )
@@ -354,7 +413,6 @@ class McFacesHandler(BaseHTTPRequestHandler):
         self.wfile.write(png_bytes)
 
     def log_message(self, fmt, *args):
-        # Keep logs quiet; comment this out if you want request logs.
         return
 
 
@@ -366,11 +424,15 @@ class McFacesHTTPServer(HTTPServer):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Tiny web server showing online MC players + face images.")
+    ap = argparse.ArgumentParser(description="Tiny web server showing online MC players + face images (Java Edition).")
     ap.add_argument("--host", required=True, help="Minecraft server host/IP")
     ap.add_argument("--port", type=int, default=25565, help="Minecraft server port (default 25565)")
     ap.add_argument("--web-port", type=int, default=8765, help="Web server port (default 8765)")
-    ap.add_argument("--bind", default="127.0.0.1", help="Bind address (default 127.0.0.1). Use 0.0.0.0 to expose on LAN.")
+    ap.add_argument(
+        "--bind",
+        default="127.0.0.1",
+        help="Bind address (default 127.0.0.1). Use 0.0.0.0 to expose on LAN.",
+    )
     args = ap.parse_args()
 
     httpd = McFacesHTTPServer((args.bind, args.web_port), McFacesHandler, mc_host=args.host, mc_port=args.port)
