@@ -1,3 +1,8 @@
+# NOTE (fresh Windows 11):
+# ExecutionPolicy may be 'Restricted'.
+# If Script 0 will not run, launch it once with:
+#   powershell -ExecutionPolicy Bypass -File .\0-instructions-preflight.ps1
+
 # Script 0: Instructions + Preflight (READ-ONLY)
 
 Write-Host "=== SCRIPT 0: PRE-FLIGHT CHECK ==="
