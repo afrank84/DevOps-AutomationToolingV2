@@ -9,6 +9,19 @@ Write-Host "3. Virtualization MUST be enabled in BIOS (VT-x / SVM)"
 Write-Host "4. Reboots are HARD STOPS in this workflow"
 Write-Host ""
 
+# ---- Execution Policy Check ----
+$policy = Get-ExecutionPolicy -Scope LocalMachine
+
+if ($policy -eq 'Restricted') {
+    Write-Error "PowerShell execution policy is RESTRICTED."
+    Write-Host ""
+    Write-Host "Run the following command in an ELEVATED PowerShell, then re-run Script 0:"
+    Write-Host ""
+    Write-Host "  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine"
+    Write-Host ""
+    exit 1
+}
+
 # ---- Admin check ----
 $principal = New-Object Security.Principal.WindowsPrincipal(
     [Security.Principal.WindowsIdentity]::GetCurrent()
