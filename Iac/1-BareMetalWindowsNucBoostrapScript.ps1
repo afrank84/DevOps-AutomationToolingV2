@@ -2,28 +2,26 @@
 # Bare-metal Windows NUC Bootstrap Script
 # ============================================
 # Purpose:
-#   - Prepare a clean, identical Windows host
 #   - Enable WSL2
 #   - Install Docker Desktop (WSL2 backend)
-#   - Install Gitea Actions runner (not registered)
 #
-# Non-goals:
-#   - No runner registration
-#   - No repo assumptions
-#   - No secrets
-#   - No dev tooling (Python, Git, Qt)
+# Notes:
+#   - Requires reboot to complete
+#   - No runner setup
+#   - No dev tooling
+#   - Intended to be run early in a chained script flow
 #
 # Safe to re-run
 # ============================================
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== Windows NUC bootstrap starting ==="
+Write-Host "=== Windows NUC bootstrap starting (WSL2 + Docker only) ==="
 
 # ------------------------------------------------
-# 1. Enable required Windows features (minimal)
+# 1. Enable required Windows features
 # ------------------------------------------------
-Write-Host "Enabling required Windows features..."
+Write-Host "Enabling WSL2 Windows features..."
 
 dism.exe /online /enable-feature `
     /featurename:Microsoft-Windows-Subsystem-Linux `
@@ -34,17 +32,14 @@ dism.exe /online /enable-feature `
     /all /norestart | Out-Null
 
 # ------------------------------------------------
-# 2. Configure WSL2
+# 2. Set WSL default to version 2
 # ------------------------------------------------
-Write-Host "Configuring WSL2..."
+Write-Host "Setting WSL default version to 2..."
 
 wsl --set-default-version 2 2>$null
 
-# Do NOT install a distro
-# Docker Desktop will manage its own WSL backend
-
 # ------------------------------------------------
-# 3. Install Docker Desktop (WSL2 backend)
+# 3. Install Docker Desktop
 # ------------------------------------------------
 $dockerExe = "C:\Program Files\Docker\Docker\Docker Desktop.exe"
 $dockerInstaller = "$env:TEMP\DockerDesktopInstaller.exe"
@@ -66,65 +61,7 @@ if (-not (Test-Path $dockerExe)) {
 }
 
 # ------------------------------------------------
-# 4. Enforce Docker Desktop settings (WSL2 only)
+# 4. Stop here – reboot required
 # ------------------------------------------------
-Write-Host "Configuring Docker Desktop settings..."
-
-$dockerSettingsDir = "$env:APPDATA\Docker"
-$dockerSettingsFile = "$dockerSettingsDir\settings.json"
-
-if (-not (Test-Path $dockerSettingsDir)) {
-    New-Item -ItemType Directory -Path $dockerSettingsDir -Force | Out-Null
-}
-
-if (Test-Path $dockerSettingsFile) {
-    $settings = Get-Content $dockerSettingsFile | ConvertFrom-Json
-} else {
-    $settings = @{}
-}
-
-$settings.wslEngineEnabled = $true
-$settings.useWindowsContainers = $false
-
-$settings | ConvertTo-Json -Depth 20 |
-    Set-Content $dockerSettingsFile -Encoding UTF8
-
-# ------------------------------------------------
-# 5. Install Gitea Actions runner (binary only)
-# ------------------------------------------------
-$runnerRoot = "C:\gitea-runner"
-$runnerExe = "$runnerRoot\act_runner.exe"
-
-if (-not (Test-Path $runnerExe)) {
-    Write-Host "Installing Gitea Actions runner (not registering)..."
-
-    New-Item -ItemType Directory -Path $runnerRoot -Force | Out-Null
-
-    Invoke-WebRequest `
-        -Uri "https://gitea.com/gitea/act_runner/releases/latest/download/act_runner_windows_amd64.exe" `
-        -OutFile $runnerExe
-} else {
-    Write-Host "Gitea runner already installed. Skipping."
-}
-
-# ------------------------------------------------
-# 6. Sanity checks (non-fatal)
-# ------------------------------------------------
-Write-Host "Sanity checks:"
-
-Write-Host "- WSL status:"
-try {
-    wsl --status
-} catch {
-    Write-Host "  WSL status unavailable until reboot."
-}
-
-Write-Host "- Docker CLI:"
-try {
-    docker --version
-} catch {
-    Write-Host "  Docker CLI not available until Docker Desktop is started."
-}
-
-Write-Host "=== Bootstrap complete ==="
-Write-Host "A reboot is REQUIRED before using Docker and WSL2."
+Write-Host "=== Bootstrap step complete ==="
+Write-Host "REBOOT REQUIRED before continuing with further scripts."
