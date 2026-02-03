@@ -17,6 +17,7 @@
         "/MT:16",
         "/ETA",
         "/NP",
+        "/V",
         "/LOG:$logFile"
     )
 
