@@ -1,0 +1,54 @@
+- name: Capture CI telemetry
+  if: always()
+  env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  run: |
+
+    mkdir telemetry
+
+    echo "===== BASIC GITHUB CONTEXT ====="
+    echo "repo=$GITHUB_REPOSITORY" >> telemetry/context.txt
+    echo "workflow=$GITHUB_WORKFLOW" >> telemetry/context.txt
+    echo "run_id=$GITHUB_RUN_ID" >> telemetry/context.txt
+    echo "run_number=$GITHUB_RUN_NUMBER" >> telemetry/context.txt
+    echo "run_attempt=$GITHUB_RUN_ATTEMPT" >> telemetry/context.txt
+    echo "event=$GITHUB_EVENT_NAME" >> telemetry/context.txt
+    echo "actor=$GITHUB_ACTOR" >> telemetry/context.txt
+    echo "branch=$GITHUB_REF_NAME" >> telemetry/context.txt
+    echo "commit=$GITHUB_SHA" >> telemetry/context.txt
+
+    echo "===== RUNNER ENVIRONMENT ====="
+    echo "runner_os=$RUNNER_OS" >> telemetry/runner.txt
+    echo "runner_arch=$RUNNER_ARCH" >> telemetry/runner.txt
+    echo "runner_name=$RUNNER_NAME" >> telemetry/runner.txt
+
+    echo "===== SYSTEM INFO ====="
+    uname -a > telemetry/system.txt
+    nproc >> telemetry/system.txt
+    free -h >> telemetry/system.txt
+    df -h >> telemetry/system.txt
+
+    echo "===== COMMIT INFO ====="
+    git log -1 > telemetry/commit.txt
+    git show --stat >> telemetry/commit.txt
+
+    echo "===== FILES CHANGED ====="
+    git diff --name-only HEAD~1 > telemetry/files_changed.txt
+
+    echo "===== DIFF STATS ====="
+    git diff --shortstat HEAD~1 > telemetry/diff_stats.txt
+
+    echo "===== WORKFLOW RUN DATA ====="
+    gh api \
+      repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID \
+      > telemetry/workflow_run.json
+
+    echo "===== JOBS AND STEPS ====="
+    gh api \
+      repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs \
+      > telemetry/jobs.json
+
+    echo "===== DOWNLOAD WORKFLOW LOGS ====="
+    gh run download $GITHUB_RUN_ID --log --dir telemetry/logs
+
+    echo "Telemetry capture complete"
