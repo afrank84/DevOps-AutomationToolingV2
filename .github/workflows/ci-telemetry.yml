@@ -1,87 +1,97 @@
-name: CI Telemetry Test
+name: CI Telemetry
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
   push:
   workflow_dispatch:
 
 jobs:
-  test-and-capture:
+
+  build:
+
     runs-on: ubuntu-latest
 
     steps:
 
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Simulated build step
+      - name: Simulate build
         run: |
-          echo "Running build..."
-          sleep 3
-          echo "Build complete"
+          echo "Running build"
+          sleep 2
+          echo "Build finished"
 
-      - name: Capture CI telemetry
+      - name: Collect telemetry
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
 
-          mkdir -p telemetry
-
-          echo "Collecting telemetry..."
+          mkdir telemetry
 
           REPO="$GITHUB_REPOSITORY"
-          WORKFLOW="$GITHUB_WORKFLOW"
           RUN_ID="$GITHUB_RUN_ID"
           RUN_NUMBER="$GITHUB_RUN_NUMBER"
-          RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT"
+          WORKFLOW="$GITHUB_WORKFLOW"
           EVENT="$GITHUB_EVENT_NAME"
           ACTOR="$GITHUB_ACTOR"
           BRANCH="$GITHUB_REF_NAME"
           COMMIT="$GITHUB_SHA"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
           RUNNER_OS="$RUNNER_OS"
           RUNNER_ARCH="$RUNNER_ARCH"
           RUNNER_NAME="$RUNNER_NAME"
 
-          SYSTEM_INFO=$(uname -a)
-          CPU_COUNT=$(nproc)
-          MEMORY=$(free -h | sed ':a;N;$!ba;s/\n/\\n/g')
-          DISK=$(df -h | sed ':a;N;$!ba;s/\n/\\n/g')
+          COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
+          COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
 
-          COMMIT_INFO=$(git log -1 --pretty=format:'%H|%an|%ad|%s')
+          echo "Fetching job data from GitHub API"
 
-          FILES_CHANGED=$(git diff --name-only HEAD~1 2>/dev/null | tr '\n' ',')
+          curl -s \
+          -H "Authorization: Bearer $GH_TOKEN" \
+          https://api.github.com/repos/$REPO/actions/runs/$RUN_ID \
+          > telemetry/run.json
 
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          curl -s \
+          -H "Authorization: Bearer $GH_TOKEN" \
+          https://api.github.com/repos/$REPO/actions/runs/$RUN_ID/jobs \
+          > telemetry/jobs.json
 
-          cat <<EOF > telemetry/ci_telemetry.json
+          QUEUE_TIME=$(jq -r '.created_at' telemetry/run.json)
+          RUN_STATUS=$(jq -r '.status' telemetry/run.json)
+          RUN_CONCLUSION=$(jq -r '.conclusion' telemetry/run.json)
+
+          JOB_DURATION=$(jq -r '.jobs[0].completed_at' telemetry/jobs.json)
+
+          cat <<EOF > telemetry/${RUN_NUMBER}_ci_telemetry.json
           {
             "repo": "$REPO",
             "workflow": "$WORKFLOW",
             "run_id": "$RUN_ID",
             "run_number": "$RUN_NUMBER",
-            "run_attempt": "$RUN_ATTEMPT",
             "event": "$EVENT",
             "actor": "$ACTOR",
             "branch": "$BRANCH",
             "commit": "$COMMIT",
+            "commit_author": "$COMMIT_AUTHOR",
+            "commit_message": "$COMMIT_MESSAGE",
+
+            "status": "$RUN_STATUS",
+            "conclusion": "$RUN_CONCLUSION",
+
+            "queue_time": "$QUEUE_TIME",
 
             "runner": {
+              "name": "$RUNNER_NAME",
               "os": "$RUNNER_OS",
-              "arch": "$RUNNER_ARCH",
-              "name": "$RUNNER_NAME"
+              "arch": "$RUNNER_ARCH"
             },
 
-            "system": {
-              "uname": "$SYSTEM_INFO",
-              "cpu_count": "$CPU_COUNT",
-              "memory": "$MEMORY",
-              "disk": "$DISK"
-            },
-
-            "commit_info": "$COMMIT_INFO",
-
-            "files_changed": "$FILES_CHANGED",
+            "job_duration": "$JOB_DURATION",
 
             "timestamp": "$TIMESTAMP"
           }
@@ -90,5 +100,5 @@ jobs:
       - name: Upload telemetry artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ci-telemetry
-          path: telemetry/ci_telemetry.json
+          name: telemetry-${{ github.run_number }}
+          path: telemetry/*.json
