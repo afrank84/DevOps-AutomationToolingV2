@@ -1,104 +1,25 @@
-name: CI Telemetry
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
-on:
-  push:
-  workflow_dispatch:
-
-jobs:
-
-  build:
-
-    runs-on: ubuntu-latest
-
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Simulate build
-        run: |
-          echo "Running build"
-          sleep 2
-          echo "Build finished"
-
-      - name: Collect telemetry
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-
-          mkdir telemetry
-
-          REPO="$GITHUB_REPOSITORY"
-          RUN_ID="$GITHUB_RUN_ID"
-          RUN_NUMBER="$GITHUB_RUN_NUMBER"
-          WORKFLOW="$GITHUB_WORKFLOW"
-          EVENT="$GITHUB_EVENT_NAME"
-          ACTOR="$GITHUB_ACTOR"
-          BRANCH="$GITHUB_REF_NAME"
-          COMMIT="$GITHUB_SHA"
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          RUNNER_OS="$RUNNER_OS"
-          RUNNER_ARCH="$RUNNER_ARCH"
-          RUNNER_NAME="$RUNNER_NAME"
-
-          COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
-          COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
-
-          echo "Fetching job data from GitHub API"
-
-          curl -s \
-          -H "Authorization: Bearer $GH_TOKEN" \
-          https://api.github.com/repos/$REPO/actions/runs/$RUN_ID \
-          > telemetry/run.json
-
-          curl -s \
-          -H "Authorization: Bearer $GH_TOKEN" \
-          https://api.github.com/repos/$REPO/actions/runs/$RUN_ID/jobs \
-          > telemetry/jobs.json
-
-          QUEUE_TIME=$(jq -r '.created_at' telemetry/run.json)
-          RUN_STATUS=$(jq -r '.status' telemetry/run.json)
-          RUN_CONCLUSION=$(jq -r '.conclusion' telemetry/run.json)
-
-          JOB_DURATION=$(jq -r '.jobs[0].completed_at' telemetry/jobs.json)
-
-          cat <<EOF > telemetry/${RUN_NUMBER}_ci_telemetry.json
-          {
-            "repo": "$REPO",
-            "workflow": "$WORKFLOW",
-            "run_id": "$RUN_ID",
-            "run_number": "$RUN_NUMBER",
-            "event": "$EVENT",
-            "actor": "$ACTOR",
-            "branch": "$BRANCH",
-            "commit": "$COMMIT",
-            "commit_author": "$COMMIT_AUTHOR",
-            "commit_message": "$COMMIT_MESSAGE",
-
-            "status": "$RUN_STATUS",
-            "conclusion": "$RUN_CONCLUSION",
-
-            "queue_time": "$QUEUE_TIME",
-
-            "runner": {
-              "name": "$RUNNER_NAME",
-              "os": "$RUNNER_OS",
-              "arch": "$RUNNER_ARCH"
-            },
-
-            "job_duration": "$JOB_DURATION",
-
-            "timestamp": "$TIMESTAMP"
-          }
-          EOF
-
-      - name: Upload telemetry artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: telemetry-${{ github.run_number }}
-          path: telemetry/*.json
+{
+  "repo": "afrank84/DevOps-AutomationToolingV2",
+  "workflow": "CI Telemetry",
+  "run_id": "904884882",
+  "run_number": "5",
+  "event": "push",
+  "actor": "afrank84",
+  "branch": "main",
+  "commit": "f2c9a11",
+  "commit_author": "Anthony Frank",
+  "commit_message": "Update telemetry workflow",
+  "status": "completed",
+  "conclusion": "success",
+  "queue_time": "2026-03-11T16:40:21Z",
+  "runner": {
+    "name": "GitHub Actions Runner",
+    "os": "Linux",
+    "arch": "X64"
+  },
+  "job": {
+    "started_at": "2026-03-11T16:40:24Z",
+    "completed_at": "2026-03-11T16:40:33Z"
+  },
+  "timestamp": "2026-03-11T16:40:34Z"
+}
