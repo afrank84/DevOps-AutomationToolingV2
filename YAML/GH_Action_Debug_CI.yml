@@ -1,0 +1,35 @@
+- name: Collect CI Debug Data
+  if: always()
+  run: |
+    mkdir -p debug
+
+    echo "===== CI METADATA =====" > debug/metadata.txt
+    echo "Timestamp: $(date -u)" >> debug/metadata.txt
+    echo "Workflow: $GITHUB_WORKFLOW" >> debug/metadata.txt
+    echo "Job: $GITHUB_JOB" >> debug/metadata.txt
+    echo "Run ID: $GITHUB_RUN_ID" >> debug/metadata.txt
+    echo "Run Number: $GITHUB_RUN_NUMBER" >> debug/metadata.txt
+    echo "Repository: $GITHUB_REPOSITORY" >> debug/metadata.txt
+    echo "Actor: $GITHUB_ACTOR" >> debug/metadata.txt
+    echo "Branch/Ref: $GITHUB_REF" >> debug/metadata.txt
+    echo "Commit SHA: $GITHUB_SHA" >> debug/metadata.txt
+    echo "Runner OS: $RUNNER_OS" >> debug/metadata.txt
+
+    echo "===== ENVIRONMENT =====" > debug/environment.txt
+    env >> debug/environment.txt
+
+    echo "===== DISK USAGE =====" > debug/disk.txt
+    df -h >> debug/disk.txt
+
+    echo "===== MEMORY =====" > debug/memory.txt
+    free -h >> debug/memory.txt || true
+
+    echo "===== RUNNING PROCESSES =====" > debug/processes.txt
+    ps aux >> debug/processes.txt || true
+
+    echo "===== GIT INFO =====" > debug/git.txt
+    git status >> debug/git.txt
+    git log -5 >> debug/git.txt
+
+    echo "===== WORKSPACE FILES =====" > debug/files.txt
+    ls -R >> debug/files.txt
