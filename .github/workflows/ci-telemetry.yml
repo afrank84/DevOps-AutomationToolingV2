@@ -18,13 +18,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-
       - name: Simulate build
         run: |
           echo "Running build"
           sleep 2
           echo "Build finished"
-
 
       - name: Collect telemetry
         if: always()
@@ -52,8 +50,6 @@ jobs:
           COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
           COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
 
-          echo "Querying GitHub API"
-
           RUN_DATA=$(curl -s \
             -H "Authorization: Bearer $GH_TOKEN" \
             https://api.github.com/repos/$REPO/actions/runs/$RUN_ID)
@@ -71,42 +67,53 @@ jobs:
 
           FILE="telemetry/${RUN_NUMBER}_ci_telemetry.json"
 
-          cat <<EOF > "$FILE"
-{
-  "repo": "$REPO",
-  "workflow": "$WORKFLOW",
-  "run_id": "$RUN_ID",
-  "run_number": "$RUN_NUMBER",
-  "event": "$EVENT",
-  "actor": "$ACTOR",
-  "branch": "$BRANCH",
-  "commit": "$COMMIT",
-
-  "commit_author": "$COMMIT_AUTHOR",
-  "commit_message": "$COMMIT_MESSAGE",
-
-  "status": "$RUN_STATUS",
-  "conclusion": "$RUN_CONCLUSION",
-
-  "queue_time": "$QUEUE_TIME",
-
-  "runner": {
-    "name": "$RUNNER_NAME",
-    "os": "$RUNNER_OS",
-    "arch": "$RUNNER_ARCH"
-  },
-
-  "job": {
-    "started_at": "$JOB_STARTED",
-    "completed_at": "$JOB_COMPLETED"
-  },
-
-  "timestamp": "$TIMESTAMP"
-}
-EOF
+          jq -n \
+            --arg repo "$REPO" \
+            --arg workflow "$WORKFLOW" \
+            --arg run_id "$RUN_ID" \
+            --arg run_number "$RUN_NUMBER" \
+            --arg event "$EVENT" \
+            --arg actor "$ACTOR" \
+            --arg branch "$BRANCH" \
+            --arg commit "$COMMIT" \
+            --arg commit_author "$COMMIT_AUTHOR" \
+            --arg commit_message "$COMMIT_MESSAGE" \
+            --arg status "$RUN_STATUS" \
+            --arg conclusion "$RUN_CONCLUSION" \
+            --arg queue_time "$QUEUE_TIME" \
+            --arg runner_name "$RUNNER_NAME" \
+            --arg runner_os "$RUNNER_OS" \
+            --arg runner_arch "$RUNNER_ARCH" \
+            --arg job_started "$JOB_STARTED" \
+            --arg job_completed "$JOB_COMPLETED" \
+            --arg timestamp "$TIMESTAMP" \
+          '{
+            repo: $repo,
+            workflow: $workflow,
+            run_id: $run_id,
+            run_number: $run_number,
+            event: $event,
+            actor: $actor,
+            branch: $branch,
+            commit: $commit,
+            commit_author: $commit_author,
+            commit_message: $commit_message,
+            status: $status,
+            conclusion: $conclusion,
+            queue_time: $queue_time,
+            runner: {
+              name: $runner_name,
+              os: $runner_os,
+              arch: $runner_arch
+            },
+            job: {
+              started_at: $job_started,
+              completed_at: $job_completed
+            },
+            timestamp: $timestamp
+          }' > "$FILE"
 
           echo "Telemetry written to $FILE"
-
 
       - name: Upload telemetry artifact
         uses: actions/upload-artifact@v4
