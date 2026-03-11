@@ -1,0 +1,94 @@
+name: CI Telemetry Test
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test-and-capture:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Simulated build step
+        run: |
+          echo "Running build..."
+          sleep 3
+          echo "Build complete"
+
+      - name: Capture CI telemetry
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+
+          mkdir -p telemetry
+
+          echo "Collecting telemetry..."
+
+          REPO="$GITHUB_REPOSITORY"
+          WORKFLOW="$GITHUB_WORKFLOW"
+          RUN_ID="$GITHUB_RUN_ID"
+          RUN_NUMBER="$GITHUB_RUN_NUMBER"
+          RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT"
+          EVENT="$GITHUB_EVENT_NAME"
+          ACTOR="$GITHUB_ACTOR"
+          BRANCH="$GITHUB_REF_NAME"
+          COMMIT="$GITHUB_SHA"
+
+          RUNNER_OS="$RUNNER_OS"
+          RUNNER_ARCH="$RUNNER_ARCH"
+          RUNNER_NAME="$RUNNER_NAME"
+
+          SYSTEM_INFO=$(uname -a)
+          CPU_COUNT=$(nproc)
+          MEMORY=$(free -h | sed ':a;N;$!ba;s/\n/\\n/g')
+          DISK=$(df -h | sed ':a;N;$!ba;s/\n/\\n/g')
+
+          COMMIT_INFO=$(git log -1 --pretty=format:'%H|%an|%ad|%s')
+
+          FILES_CHANGED=$(git diff --name-only HEAD~1 2>/dev/null | tr '\n' ',')
+
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          cat <<EOF > telemetry/ci_telemetry.json
+          {
+            "repo": "$REPO",
+            "workflow": "$WORKFLOW",
+            "run_id": "$RUN_ID",
+            "run_number": "$RUN_NUMBER",
+            "run_attempt": "$RUN_ATTEMPT",
+            "event": "$EVENT",
+            "actor": "$ACTOR",
+            "branch": "$BRANCH",
+            "commit": "$COMMIT",
+
+            "runner": {
+              "os": "$RUNNER_OS",
+              "arch": "$RUNNER_ARCH",
+              "name": "$RUNNER_NAME"
+            },
+
+            "system": {
+              "uname": "$SYSTEM_INFO",
+              "cpu_count": "$CPU_COUNT",
+              "memory": "$MEMORY",
+              "disk": "$DISK"
+            },
+
+            "commit_info": "$COMMIT_INFO",
+
+            "files_changed": "$FILES_CHANGED",
+
+            "timestamp": "$TIMESTAMP"
+          }
+          EOF
+
+      - name: Upload telemetry artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-telemetry
+          path: telemetry/ci_telemetry.json
