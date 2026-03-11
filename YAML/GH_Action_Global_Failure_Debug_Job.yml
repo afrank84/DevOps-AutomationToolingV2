@@ -1,0 +1,51 @@
+name: CI Pipeline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running build"
+      - run: exit 1   # simulate failure
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running tests"
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running linter"
+
+
+  debug_failure:
+    needs: [build, test, lint]
+    if: failure()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Collect metadata
+        run: |
+          mkdir debug
+
+          echo "Timestamp: $(date -u)" > debug/metadata.txt
+          echo "Run ID: $GITHUB_RUN_ID" >> debug/metadata.txt
+          echo "Run Number: $GITHUB_RUN_NUMBER" >> debug/metadata.txt
+          echo "Workflow: $GITHUB_WORKFLOW" >> debug/metadata.txt
+          echo "Repository: $GITHUB_REPOSITORY" >> debug/metadata.txt
+          echo "Actor: $GITHUB_ACTOR" >> debug/metadata.txt
+          echo "Commit: $GITHUB_SHA" >> debug/metadata.txt
+
+      - name: Dump environment
+        run: env > debug/environment.txt
+
+      - name: Upload debug artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-debug-${{ github.run_id }}
+          path: debug/
