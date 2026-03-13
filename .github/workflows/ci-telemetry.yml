@@ -1,5 +1,8 @@
 name: CI Telemetry
 
+permissions:
+  contents: write
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -120,3 +123,29 @@ jobs:
         with:
           name: telemetry-${{ github.run_number }}
           path: telemetry/*.json
+
+      - name: Push telemetry to CI-Dashboard
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+      
+          git clone https://x-access-token:${GH_TOKEN}@github.com/afrank84/CI-Dashboard.git dashboard
+      
+          mkdir -p dashboard/data
+      
+          FILE="${GITHUB_REPOSITORY//\//_}_${GITHUB_RUN_ID}.json"
+      
+          cp telemetry/*.json dashboard/data/$FILE
+      
+          cd dashboard
+      
+          git config user.name "CI Telemetry"
+          git config user.email "ci-telemetry@local"
+      
+          git add data/$FILE
+      
+          git commit -m "CI telemetry ${GITHUB_REPOSITORY} run ${GITHUB_RUN_ID}" || echo "No changes"
+      
+          git push
+
