@@ -1,0 +1,50 @@
+name: Failure Log to NAS Demo
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  demo-failure:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Intentional failure
+        run: |
+          echo "Simulated build step"
+          exit 1
+
+      - name: Prepare SSH
+        if: failure()
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.NAS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan ${{ secrets.NAS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create single CI log
+        if: failure()
+        run: |
+          LOG="${GITHUB_REPOSITORY//\//_}_${GITHUB_WORKFLOW}_${GITHUB_RUN_ID}.log"
+
+          {
+            echo "repo=$GITHUB_REPOSITORY"
+            echo "workflow=$GITHUB_WORKFLOW"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "run_number=$GITHUB_RUN_NUMBER"
+            echo "branch=$GITHUB_REF_NAME"
+            echo "actor=$GITHUB_ACTOR"
+            echo "commit=$GITHUB_SHA"
+            echo "runner_os=$RUNNER_OS"
+            echo "status=failed"
+          } > "$LOG"
+
+          echo "LOG_FILE=$LOG" >> $GITHUB_ENV
+
+      - name: Upload to Synology
+        if: failure()
+        run: |
+          scp "$LOG_FILE" \
+          ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }}:/volume1/ci_logs/
