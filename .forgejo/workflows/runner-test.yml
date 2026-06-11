@@ -1,0 +1,27 @@
+name: Runner Test
+
+on:
+push:
+workflow_dispatch:
+
+jobs:
+test:
+runs-on: linux
+
+steps:
+  - name: Show system info
+    run: |
+      echo "Hello from Forgejo Runner"
+      hostname
+      whoami
+      pwd
+      uname -a
+
+  - name: Show Docker
+    run: |
+      docker --version || echo "Docker not installed"
+
+  - name: Show Podman
+    run: |
+      podman --version || echo "Podman not installed"
+
