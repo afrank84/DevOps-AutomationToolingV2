@@ -1,0 +1,55 @@
+name: Minecraft Server
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: linux
+
+    steps:
+      - name: Create Data Directory
+        run: mkdir -p "$HOME/minecraft"
+
+      - name: Check Podman
+        run: |
+          which podman
+          podman ps
+
+      - name: Pull Latest Image
+        run: |
+          podman pull docker.io/itzg/minecraft-server:latest
+
+      - name: Stop Existing Server
+        run: |
+          podman stop minecraft || true
+          podman rm minecraft || true
+
+      - name: Start Minecraft
+        run: |
+          podman run -d \
+            --name minecraft \
+            --restart unless-stopped \
+            -p 25565:25565 \
+            -e EULA=TRUE \
+            -e TYPE=VANILLA \
+            -e MEMORY=8G \
+            -v /home/agent/minecraft:/data \
+            docker.io/itzg/minecraft-server:latest
+
+      - name: Show Logs
+        run: |
+          sleep 15
+          podman logs minecraft
+
+      - name: Show Connection Info
+        run: |
+          HOSTNAME=$(hostname)
+          IP=$(hostname -I | awk '{print $1}')
+
+          echo "Minecraft Server Information"
+          echo "----------------------------"
+          echo "Hostname: $HOSTNAME"
+          echo "mDNS: $HOSTNAME.local"
+          echo "IP Address: $IP"
+          echo "Port: 25565"
