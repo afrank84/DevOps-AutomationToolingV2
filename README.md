@@ -1,5 +1,7 @@
 # DevOps Automation Tooling V2
 
+[![Deployed Site](https://img.shields.io/badge/live-site-blue)](https://devops-automationtoolingv2.pages.dev/)
+
 ## Overview
 
 DevOps Automation Tooling V2 is a **comprehensive collection of automation scripts, utilities, and tools** built to simplify and streamline a wide range of technical tasks.
@@ -7,6 +9,8 @@ DevOps Automation Tooling V2 is a **comprehensive collection of automation scrip
 Rather than being a single application, this repository serves as a **centralized toolbox** for DevOps, system administration, data processing, and personal productivity workflows.
 
 The project evolves continuously, with scripts organized by category and use case.
+
+> Live demo: https://devops-automationtoolingv2.pages.dev/
 
 ---
 
@@ -26,117 +30,138 @@ This repository exists to:
 
 The repository is organized into **domain-based folders**, each containing scripts or tools related to a specific area.
 
-### Core Categories
+### CI/CD & Infrastructure
 
-#### DevOps / Infrastructure
-
-* `AzureDevOps/`
-* `Github/`
-* `Gitea/`
-* `Iac/`
-* `YAML/`
-* `Artifactory/`
-
-Automation related to CI/CD, repositories, infrastructure, and pipelines.
-
----
-
-#### Systems / OS / Networking
-
-* `Linux/`
-* `Networking/`
-* `SSH/`
-* `Install/`
-
-Scripts for system setup, configuration, and troubleshooting.
+| Directory | Description |
+|-----------|-------------|
+| `AzureDevOps/` | Azure DevOps pipelines, automation, and utilities |
+| `Github/` | GitHub CLI tools, workflows, and automation |
+| `Gitea/` | Gitea instance automation and management |
+| `Forgejo/` | Forgejo runner setup, workflows, and tooling |
+| `Iac/` | Infrastructure as Code scripts and configs |
+| `YAML/` | CI/CD workflow YAML files (GitHub Actions, etc.) |
+| `Artifactory/` | Artifactory repository management |
+| `Portainer/` | Portainer container management scripts |
 
 ---
 
-#### Data / Processing / Conversion
+### Systems / OS / Networking
 
-* `Data/`
-* `Database/`
-* `Conversion/`
-* `Excel/`
-
-Tools for handling, transforming, and managing data.
-
----
-
-#### Cloud / Web / APIs
-
-* `Pcloud/`
-* `Airtable/`
-* `Atlassian/`
-
-Scripts interacting with external services and APIs.
+| Directory | Description |
+|-----------|-------------|
+| `Linux/` | Linux system setup, configuration, and troubleshooting |
+| `Networking/` | Network diagnostics, configuration, and automation |
+| `SSH/` | SSH key management and connection utilities |
+| `Install/` | Software installation and setup scripts |
+| `Action5Pro/` | Action5 Pro automation tools |
+| `AmbernicRG35XXSP/` | Ambernic RG35XXSP handheld device tooling |
 
 ---
 
-#### Automation / Utilities
+### Data / Processing / Conversion
 
-* `General/`
-* `Input_Manipulation/`
-* `ScriptRunner/`
-* `Scrappers/`
-
-General-purpose automation scripts and helpers.
-
----
-
-#### Security / Encryption
-
-* `Security/`
-* `Encryption/`
-
-Security-related tools and experiments.
+| Directory | Description |
+|-----------|-------------|
+| `Data/` | Data processing and transformation utilities |
+| `Database/` | Database query, migration, and management tools |
+| `Conversion/` | File and format conversion utilities |
+| `Excel/` | Excel file generation and manipulation |
+| `MetaData/` | Metadata extraction and manipulation tools |
+| `Torrents/` | Torrent download and management scripts |
 
 ---
 
-#### Communication / Productivity
+### Cloud / Web / APIs
 
-* `Email/`
-* `Outlook/`
-* `Forms/`
-* `Journal/`
-
-Automation for communication workflows and personal productivity.
-
----
-
-#### Media / Content
-
-* `YouTube/`
-* `RSS/`
-* `Podcast/`
-* `SnapDownloader/`
-
-Scripts for downloading, processing, or interacting with media.
+| Directory | Description |
+|-----------|-------------|
+| `Airtable/` | Airtable API automation and management |
+| `Pcloud/` | pCloud cloud storage automation |
+| `Browsers/` | Browser automation and scraping utilities |
+| `freesound_org/` | Freesound.org API integration tools |
 
 ---
 
-#### Miscellaneous / Experimental
+### Atlassian Suite
 
-* `Minecraft/`
-* `Steam/`
-* `Stocks/`
-* `Philips_Hue_Lights/`
-* `WaveFunctionCollapse/`
+| Directory | Description |
+|-----------|-------------|
+| `Atlassian/` | Atlassian ecosystem tools |
+| `Atlassian/Attachments/` | Attachment management |
+| `Atlassian/Backups/` | Backup utilities |
+| `Atlassian/Comments/` | Comment management |
+| `Atlassian/Confluence/` | Confluence wiki automation |
+| `Atlassian/Filters/` | Filter and query utilities |
+| `Atlassian/Issues/` | Issue tracking and management |
+| `Atlassian/Security/` | Security-related Atlassian tools |
+| `Redmine/` | Redmine project management automation |
 
-Personal projects, experiments, and niche automations.
+---
+
+### Automation / Utilities
+
+| Directory | Description |
+|-----------|-------------|
+| `General/` | General-purpose automation scripts |
+| `Input_Manipulation/` | Input and text manipulation utilities |
+| `ScriptRunner/` | Script execution and orchestration tools |
+| `Scrappers/` | Web scraping utilities |
+
+---
+
+### Security / Encryption
+
+| Directory | Description |
+|-----------|-------------|
+| `Security/` | Security scanning, log collection, and utilities |
+| `Encryption/` | Encryption and decryption tools |
+
+---
+
+### Communication / Productivity
+
+| Directory | Description |
+|-----------|-------------|
+| `Email/` | Email automation and management |
+| `Outlook/` | Outlook integration and automation |
+| `Forms/` | Form generation and processing |
+| `Journal/` | Journaling and note-taking utilities |
+| `Habit_Trackers/` | Habit tracking tools |
+
+---
+
+### Media / Content
+
+| Directory | Description |
+|-----------|-------------|
+| `YouTube/` | YouTube audio/video download and processing |
+| `RSS/` | RSS feed monitoring and processing |
+| `Podcast/` | Podcast download and management |
+| `SnapDownloader/` | SnapDownloader utilities |
+
+---
+
+### Miscellaneous / Experimental
+
+| Directory | Description |
+|-----------|-------------|
+| `Minecraft/` | Minecraft server management and automation |
+| `Steam/` | Steam library management and automation |
+| `Stocks/` | Stock analysis, strategy, and charting tools |
+| `Philips_Hue_Lights/` | Philips Hue smart light automation |
+| `WaveFunctionCollapse/` | Wave Function Collapse algorithm demos |
 
 ---
 
 ## Key Characteristics
 
-* Multi-language (Python, PowerShell, Bash, Perl, etc.)
+* Multi-language (Python, PowerShell, Bash, Perl, JavaScript)
 * Task-focused scripts rather than a single application
 * Mix of production-ready and experimental code
 * Organized by use case, not by architecture
 * Continuously evolving
 
 ---
-
 
 ## Prerequisites
 
@@ -194,5 +219,3 @@ This repository is best understood as:
 > A growing library of automation scripts and technical solutions across multiple domains
 
 —not a single tool, but a **toolbox built over time**.
-
-
