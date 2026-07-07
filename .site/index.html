@@ -1,1 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DevOps Automation Tooling V2</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0b1120;--bg2:#111827;--bg3:#1e293b;--bg4:#334155;
+      --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+      --accent:#3b82f6;--accent2:#60a5fa;--accent-glow:rgba(59,130,246,.15);
+      --green:#22c55e;--amber:#f59e0b;--red:#ef4444;--purple:#a855f7;--cyan:#06b6d4;--pink:#ec4899;--orange:#f97316;--teal:#14b8a6;
+      --border:#1e293b;--radius:10px;
+      --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+      --mono:"SF Mono","Fira Code","Cascadia Code",Consolas,monospace;
+    }
+    html{scroll-behavior:smooth}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
 
+    /* NAV */
+    nav{position:sticky;top:0;z-index:100;background:rgba(11,17,32,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 2rem}
+    .nav-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:1.5rem;height:56px}
+    .nav-brand{font-weight:700;font-size:1.05rem;color:#fff;display:flex;align-items:center;gap:.5rem;white-space:nowrap}
+    .nav-brand svg{width:24px;height:24px}
+    .nav-links{display:flex;gap:.25rem;overflow-x:auto;scrollbar-width:none}
+    .nav-links::-webkit-scrollbar{display:none}
+    .nav-links a{color:var(--text2);text-decoration:none;font-size:.82rem;padding:.35rem .65rem;border-radius:6px;white-space:nowrap;transition:all .15s}
+    .nav-links a:hover,.nav-links a.active{color:#fff;background:var(--bg3)}
+    .nav-search{margin-left:auto;position:relative;flex-shrink:0}
+    .nav-search input{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:.35rem .75rem .35rem 2rem;border-radius:8px;font-size:.82rem;width:200px;outline:none;transition:border .15s}
+    .nav-search input:focus{border-color:var(--accent)}
+    .nav-search svg{position:absolute;left:.6rem;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3)}
+
+    /* HERO */
+    .hero{max-width:1400px;margin:0 auto;padding:4rem 2rem 3rem;text-align:center}
+    .hero-badge{display:inline-flex;align-items:center;gap:.4rem;background:var(--accent-glow);border:1px solid rgba(59,130,246,.3);color:var(--accent2);font-size:.78rem;padding:.3rem .85rem;border-radius:99px;margin-bottom:1.25rem}
+    .hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;color:#fff;margin-bottom:.75rem;letter-spacing:-.03em;line-height:1.15}
+    .hero h1 span{background:linear-gradient(135deg,var(--accent2),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .hero p{font-size:1.1rem;color:var(--text2);max-width:640px;margin:0 auto 2rem}
+    .hero-stats{display:flex;justify-content:center;gap:2rem;flex-wrap:wrap}
+    .hero-stat{text-align:center}
+    .hero-stat .num{font-size:1.8rem;font-weight:800;color:#fff}
+    .hero-stat .label{font-size:.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+
+    /* MAIN */
+    .container{max-width:1400px;margin:0 auto;padding:0 2rem 4rem}
+
+    /* CATEGORY */
+    .category{margin-bottom:2.5rem}
+    .category-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;cursor:pointer;user-select:none}
+    .category-header:hover .cat-title{color:var(--accent2)}
+    .cat-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+    .cat-title{font-size:1.15rem;font-weight:700;color:#fff;transition:color .15s}
+    .cat-count{font-size:.75rem;color:var(--text3);background:var(--bg3);padding:.15rem .55rem;border-radius:99px}
+    .cat-desc{font-size:.85rem;color:var(--text3);margin-bottom:.75rem}
+
+    /* TOOL GRID */
+    .tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:.65rem}
+    .tool-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem 1rem;transition:all .15s;cursor:pointer;text-decoration:none;color:inherit;display:block}
+    .tool-card:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-1px)}
+    .tool-card.hidden{display:none}
+    .tool-top{display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem}
+    .tool-lang{font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:.12rem .45rem;border-radius:4px;flex-shrink:0}
+    .lang-powershell{background:rgba(100,100,255,.15);color:#8b8bff}
+    .lang-python{background:rgba(234,179,8,.15);color:#eab308}
+    .lang-bash{background:rgba(34,197,94,.15);color:#22c55e}
+    .lang-perl{background:rgba(249,115,22,.15);color:#f97316}
+    .lang-yaml{background:rgba(168,85,247,.15);color:#a855f7}
+    .lang-go{background:rgba(6,182,212,.15);color:#06b6d4}
+    .lang-php{background:rgba(236,72,153,.15);color:#ec4899}
+    .lang-sql{background:rgba(255,255,255,.1);color:#cbd5e1}
+    .lang-html{background:rgba(245,158,11,.15);color:#f59e0b}
+    .lang-groovy{background:rgba(168,85,247,.2);color:#c084fc}
+    .lang-js{background:rgba(234,179,8,.12);color:#facc15}
+    .lang-cobol{background:rgba(34,197,94,.12);color:#4ade80}
+    .tool-name{font-size:.9rem;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .tool-desc{font-size:.8rem;color:var(--text2);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .tool-path{font-size:.7rem;color:var(--text3);margin-top:.35rem;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+    /* NO RESULTS */
+    .no-results{text-align:center;padding:3rem;color:var(--text3);display:none}
+    .no-results.show{display:block}
+    .no-results svg{width:48px;height:48px;margin-bottom:1rem;opacity:.4}
+
+    /* FOOTER */
+    footer{text-align:center;padding:2rem;color:var(--text3);font-size:.8rem;border-top:1px solid var(--border)}
+    footer a{color:var(--accent2);text-decoration:none}
+    footer a:hover{text-decoration:underline}
+
+    /* RESPONSIVE */
+    @media(max-width:768px){
+      nav{padding:0 1rem}
+      .hero{padding:2.5rem 1rem 2rem}
+      .container{padding:0 1rem 3rem}
+      .tool-grid{grid-template-columns:1fr}
+      .nav-search input{width:140px}
+      .hero h1{font-size:1.8rem}
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      DevOps Tooling
+    </div>
+    <div class="nav-links" id="navLinks"></div>
+    <div class="nav-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="search" id="searchInput" placeholder="Search scripts..." autocomplete="off">
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-badge"><span class="dot"></span> Active Toolkit</div>
+  <h1>DevOps <span>Automation Tooling</span> V2</h1>
+  <p>A comprehensive library of automation scripts, utilities, and tools for DevOps, system administration, data processing, and personal productivity workflows.</p>
+  <div class="hero-stats" id="heroStats"></div>
+</section>
+
+<main class="container" id="mainContainer"></main>
+
+<div class="no-results" id="noResults">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M8 11h6"/></svg>
+  <p>No scripts match your search.</p>
+</div>
+
+<footer>
+  <p>DevOps Automation Tooling V2 &mdash; MIT License &mdash; <a href="https://github.com/afrank84/DevOps-AutomationToolingV2">View on GitHub</a></p>
+</footer>
+
+<script>
+const TOOLS = [
+  // Action5Pro
+  {name:"Delete-All-Files-But-Mp4.pl",desc:"Recursively delete all files in a directory except MP4 video files.",lang:"perl",path:"Action5Pro/Delete-All-Files-But-Mp4.pl",cat:"Media"},
+  // Airtable
+  {name:"Download-DatabaseWithPat.py",desc:"Download an Airtable database using a Personal Access Token.",lang:"python",path:"Airtable/Download-DatabaseWithPat.py",cat:"Cloud"},
+  // Ambernic
+  {name:"RemoveGamesForKids.pl",desc:"Remove game files from an Ambernic RG35XX SP handheld console.",lang:"perl",path:"AmbernicRG35XXSP/RemoveGamesForKids.pl",cat:"Gaming"},
+  // Artifactory
+  {name:"Upload-FilesRecusiveWithFolderStructure.py",desc:"Upload files to JFrog Artifactory while preserving directory structure.",lang:"python",path:"Artifactory/Upload-FilesRecusiveWithFolderStructure.py",cat:"DevOps"},
+  {name:"Upload-SingleFileToArtifactory.py",desc:"Upload a single file to JFrog Artifactory.",lang:"python",path:"Artifactory/Upload-SingleFileToArtifactory.py",cat:"DevOps"},
+  {name:"List-FilesAndSizeInFolder.ps1",desc:"List files in an Artifactory folder with their sizes.",lang:"powershell",path:"Artifactory/List-FilesAndSizeInFolder.ps1",cat:"DevOps"},
+  // Atlassian - Attachments
+  {name:"Download-Attachments.py",desc:"Download all attachments from Jira issues.",lang:"python",path:"Atlassian/Attachments/Download-Attachments.py",cat:"Atlassian"},
+  {name:"List-Attachments.ps1",desc:"List attachments on Jira issues via PowerShell.",lang:"powershell",path:"Atlassian/Attachments/List-Attachments.ps1",cat:"Atlassian"},
+  {name:"List-Attachments.py",desc:"List attachments with metadata from Jira issues.",lang:"python",path:"Atlassian/Attachments/List-Attachments.py",cat:"Atlassian"},
+  // Atlassian - Backups
+  {name:"Jira-backup.sh",desc:"Backup Jira data via shell script (XML export).",lang:"bash",path:"Atlassian/Backups/Jira-backup.sh",cat:"Atlassian"},
+  {name:"Confluence-backup.sh",desc:"Backup Confluence pages via shell script.",lang:"bash",path:"Atlassian/Backups/Confluence-backup.sh",cat:"Atlassian"},
+  {name:"jira_backup.py",desc:"Backup Jira issues and data via Python API.",lang:"python",path:"Atlassian/Backups/jira_backup.py",cat:"Atlassian"},
+  {name:"confluence_backup.py",desc:"Backup Confluence pages via Python API.",lang:"python",path:"Atlassian/Backups/confluence_backup.py",cat:"Atlassian"},
+  {name:"backup-confluence-api-token.ps1",desc:"Manage/rotate Confluence API token.",lang:"powershell",path:"Atlassian/Backups/backup-confluence-api-token.ps1",cat:"Atlassian"},
+  {name:"backup-jira-api-token.ps1",desc:"Manage/rotate Jira API token.",lang:"powershell",path:"Atlassian/Backups/backup-jira-api-token.ps1",cat:"Atlassian"},
+  {name:"PressCreateBackupButton.ps1",desc:"Automate pressing the Create Backup button in Jira UI.",lang:"powershell",path:"Atlassian/Backups/PressCreateBackupButton.ps1",cat:"Atlassian"},
+  // Atlassian - Comments
+  {name:"Get-ProjectKeysInComments.py",desc:"Extract project keys mentioned in Jira comments.",lang:"python",path:"Atlassian/Comments/Get-ProjectKeysInComments.py",cat:"Atlassian"},
+  {name:"Replace-LinksInComments.ps1",desc:"Find and replace URLs in Jira issue comments.",lang:"powershell",path:"Atlassian/Comments/Replace-LinksInComments.ps1",cat:"Atlassian"},
+  // Atlassian - Confluence
+  {name:"confluence_backup_gui.py",desc:"GUI tool for backing up Confluence pages.",lang:"python",path:"Atlassian/Confluence/confluence_backup_gui.py",cat:"Atlassian"},
+  // Atlassian - Filters
+  {name:"Get-JiraFiltersAndJql.ps1",desc:"Export Jira filters with their JQL queries.",lang:"powershell",path:"Atlassian/Filters/Get-JiraFiltersAndJql.ps1",cat:"Atlassian"},
+  {name:"Upload-FiltersById.ps1",desc:"Upload Jira filters by ID.",lang:"powershell",path:"Atlassian/Filters/Upload-FiltersById.ps1",cat:"Atlassian"},
+  // Atlassian - Issues
+  {name:"Jira-GetActiveSprints.ps1",desc:"Get all active sprints from Jira.",lang:"powershell",path:"Atlassian/Jira-GetActiveSprints.ps1",cat:"Atlassian"},
+  {name:"Get-IssueAsMdFile.py",desc:"Export a Jira issue as a Markdown file.",lang:"python",path:"Atlassian/Issues/Get-IssueAsMdFile.py",cat:"Atlassian"},
+  {name:"Jira-AddSubtaskByParentIssueName.ps1",desc:"Add a subtask to a Jira issue by parent name.",lang:"powershell",path:"Atlassian/Issues/Jira-AddSubtaskByParentIssueName.ps1",cat:"Atlassian"},
+  {name:"Jira-AssignIssuesInProjectKcByName.ps1",desc:"Assign Jira issues in a project by name.",lang:"powershell",path:"Atlassian/Issues/Jira-AssignIssuesInProjectKcByName.ps1",cat:"Atlassian"},
+  {name:"Jira-CreateDailyChoreListProjectKcAurora.ps1",desc:"Create daily chore list issues in Jira (Aurora project).",lang:"powershell",path:"Atlassian/Issues/Jira-CreateDailyChoreListProjectKcAurora.ps1",cat:"Atlassian"},
+  {name:"Jira-CreateDailyChoreListProjectKcRaynor.ps1",desc:"Create daily chore list issues in Jira (Raynor project).",lang:"powershell",path:"Atlassian/Issues/Jira-CreateDailyChoreListProjectKcRaynor.ps1",cat:"Atlassian"},
+  {name:"Jira-DeleteIssuesStatusDoneInProjectKc.ps1",desc:"Delete issues with Done status in a Jira project.",lang:"powershell",path:"Atlassian/Issues/Jira-DeleteIssuesStatusDoneInProjectKc.ps1",cat:"Atlassian"},
+  {name:"Jira-DeleteIssuesStatusDoneInProjectKc.sh",desc:"Delete Done issues in a Jira project via shell.",lang:"bash",path:"Atlassian/Issues/Jira-DeleteIssuesStatusDoneInProjectKc.sh",cat:"Atlassian"},
+  {name:"Jira-DeleteSingleIssue.ps1",desc:"Delete a single Jira issue by key.",lang:"powershell",path:"Atlassian/Issues/Jira-DeleteSingleIssue.ps1",cat:"Atlassian"},
+  {name:"Jira-GetAllProjectKcIssues.ps1",desc:"Get all issues for a Jira project.",lang:"powershell",path:"Atlassian/Issues/Jira-GetAllProjectKcIssues.ps1",cat:"Atlassian"},
+  {name:"Jira-GetDailyIssuesInProjectKc.ps1",desc:"Get daily issues for a Jira project.",lang:"powershell",path:"Atlassian/Issues/Jira-GetDailyIssuesInProjectKc.ps1",cat:"Atlassian"},
+  {name:"Jira-GrabDailyChoreFromCSV.ps1",desc:"Import daily chore items from a CSV into Jira.",lang:"powershell",path:"Atlassian/Issues/Jira-GrabDailyChoreFromCSV.ps1",cat:"Atlassian"},
+  // Atlassian - Security
+  {name:"ScanForDefectsChangedAfterClose.py",desc:"Scan Jira for security defects reopened after closure.",lang:"python",path:"Atlassian/Security/ScanForDefectsChangedAfterClose.py",cat:"Atlassian"},
+  {name:"Get-AllIssuesAssignedToMeInOneYearPPM.pl",desc:"Get all issues assigned to you over the past year in PPM.",lang:"perl",path:"Atlassian/Get-AllIssuesAssignedToMeInOneYearPPM.pl",cat:"Atlassian"},
+  {name:"Read-MdFileOutputAndCleanUpToPrettyTable.ps1",desc:"Read markdown output and format as a pretty table.",lang:"powershell",path:"Atlassian/Read-MdFileOutputAndCleanUpToPrettyTable.ps1",cat:"Atlassian"},
+  // AzureDevOps
+  {name:"Azure-to-GitHub-Commit-History-Validation-Local.py",desc:"Validate commit history consistency between Azure DevOps and GitHub.",lang:"python",path:"AzureDevOps/Azure-to-GitHub-Commit-History-Validation-Local.py",cat:"DevOps"},
+  {name:"Get-ADOBuildsByMonth.pl",desc:"Get Azure DevOps build history by month.",lang:"perl",path:"AzureDevOps/Get-ADOBuildsByMonth.pl",cat:"DevOps"},
+  // Browsers
+  {name:"Get-BookMarks.py",desc:"Extract bookmarks from a browser profile.",lang:"python",path:"Browsers/Get-BookMarks.py",cat:"Utilities"},
+  {name:"Brave-RemoveLockFile.sh",desc:"Remove Brave browser lock file to fix startup issues.",lang:"bash",path:"Browsers/Brave-RemoveLockFile.sh",cat:"Utilities"},
+  // Conversion
+  {name:"Convert-CsvToJson.py",desc:"Convert CSV files to JSON format.",lang:"python",path:"Conversion/Convert-CsvToJson.py",cat:"Data"},
+  {name:"Get-AllContentHtmlToMd.ps1",desc:"Convert HTML content to Markdown.",lang:"powershell",path:"Conversion/Get-AllContentHtmlToMd.ps1",cat:"Data"},
+  // Database
+  {name:"Create-PlantABase.php",desc:"Create a database schema for plant tracking.",lang:"php",path:"Database/Create-PlantABase.php",cat:"Data"},
+  {name:"Download-BackupOfMySqlDatabase.ps1",desc:"Download a MySQL database backup.",lang:"powershell",path:"Database/Download-BackupOfMySqlDatabase.ps1",cat:"Data"},
+  {name:"Get-InformationSchema.sql",desc:"Query MySQL information_schema for metadata.",lang:"sql",path:"Database/Get-InformationSchema.sql",cat:"Data"},
+  {name:"Get-MySqlDataStructure.go",desc:"Extract MySQL database structure in Go.",lang:"go",path:"Database/Get-MySqlDataStructure.go",cat:"Data"},
+  {name:"Get-MySqlTableDataStructure.php",desc:"Get MySQL table structure via PHP.",lang:"php",path:"Database/Get-MySqlTableDataStructure.php",cat:"Data"},
+  {name:"InMotionHostingMySQLBackup.sh",desc:"Backup MySQL on InMotion Hosting via shell.",lang:"bash",path:"Database/InMotionHostingMySQLBackup.sh",cat:"Data"},
+  {name:"Read-JsonFileCreateSqlCommandsForPlantTable.py",desc:"Read JSON and generate SQL commands for a plant table.",lang:"python",path:"Database/Read-JsonFileCreateSqlCommandsForPlantTable.py",cat:"Data"},
+  // Email
+  {name:"Delete-EmailGt7DaysFromSender.py",desc:"Delete emails older than 7 days from a specific sender.",lang:"python",path:"Email/Delete-EmailGt7DaysFromSender.py",cat:"Productivity"},
+  {name:"Print-SubjectLineOfUnreadEmail.py",desc:"Print subject lines of unread emails.",lang:"python",path:"Email/Print-SubjectLineOfUnreadEmail.py",cat:"Productivity"},
+  // Encryption
+  {name:"DeterministicKeyGen.py",desc:"Generate deterministic encryption keys.",lang:"python",path:"Encryption/DeterministicKeyGen.py",cat:"Security"},
+  {name:"KeyGenerator.py",desc:"Generate cryptographic keys.",lang:"python",path:"Encryption/KeyGenerator.py",cat:"Security"},
+  {name:"Remove-PermissionFromPdfGui.py",desc:"Remove permissions from PDF files (GUI).",lang:"python",path:"Encryption/Remove-PermissionFromPdfGui.py",cat:"Security"},
+  {name:"Get-Base64ToASCII.ps1",desc:"Decode Base64 to ASCII.",lang:"powershell",path:"Encryption/Get-Base64ToASCII.ps1",cat:"Security"},
+  {name:"Get-Base64ToASCII.js",desc:"Decode Base64 to ASCII (JavaScript).",lang:"javascript",path:"Encryption/Get-Base64ToASCII.js",cat:"Security"},
+  // Excel
+  {name:"Remove-EmptyColumns.ps1",desc:"Remove empty columns from Excel files.",lang:"powershell",path:"Excel/Remove-EmptyColumns.ps1",cat:"Data"},
+  // Forgejo
+  {name:"get-forgejo-runner-installed.sh",desc:"Check which Forgejo runners are installed.",lang:"bash",path:"Forgejo/get-forgejo-runner-installed.sh",cat:"DevOps"},
+  // Forms
+  {name:"Soccer-Roster.html",desc:"Interactive soccer roster management form.",lang:"html",path:"Forms/Soccer-Roster.html",cat:"Forms"},
+  {name:"StumpGrinder-Pricing.html",desc:"Stump grinder pricing calculator.",lang:"html",path:"Forms/StumpGrinder-Pricing.html",cat:"Forms"},
+  {name:"Equipment-ReturnOnInvestmentByJob.html",desc:"Equipment ROI calculator by job.",lang:"html",path:"Forms/Equipment-ReturnOnInvestmentByJob.html",cat:"Forms"},
+  {name:"CreateGitHubIssue.html",desc:"Create a GitHub issue from a web form.",lang:"html",path:"Forms/CreateGitHubIssue.html",cat:"Forms"},
+  {name:"7300_Squares.html",desc:"7300 Squares interactive game/form.",lang:"html",path:"Forms/7300_Squares.html",cat:"Forms"},
+  // freesound_org
+  {name:"GetCreditsForSoundFiles.pl",desc:"Get credit info for sound files from Freesound.",lang:"perl",path:"freesound_org/GetCreditsForSoundFiles.pl",cat:"Media"},
+  {name:"SinglePageGetCreditsForSoundFileGUI.html",desc:"GUI for getting sound file credits.",lang:"html",path:"freesound_org/SinglePageGetCreditsForSoundFileGUI.html",cat:"Media"},
+  // General
+  {name:"timer_gui.py",desc:"General-purpose countdown timer with GUI.",lang:"python",path:"General/timer_gui.py",cat:"Utilities"},
+  {name:"KidsCountDownTimer.py",desc:"Kid-friendly countdown timer.",lang:"python",path:"General/KidsCountDownTimer.py",cat:"Utilities"},
+  {name:"Backup-ImagesFromAndroidPhone.ps1",desc:"Backup images from an Android phone.",lang:"powershell",path:"General/Backup-ImagesFromAndroidPhone.ps1",cat:"Utilities"},
+  {name:"organize.sh",desc:"Organize files by type/date.",lang:"bash",path:"General/organize.sh",cat:"Utilities"},
+  {name:"Remove-FilesBackupsByFibonacci.ps1",desc:"Remove old backups using Fibonacci interval.",lang:"powershell",path:"General/Remove-FilesBackupsByFibonacci.ps1",cat:"Utilities"},
+  {name:"RoboCopy-TransferHost2Host.ps1",desc:"Transfer files between hosts using RoboCopy.",lang:"powershell",path:"General/RoboCopy-TransferHost2Host.ps1",cat:"Utilities"},
+  {name:"Get-DiskSpaceOfPhysicalOrVirtualMachine.ps1",desc:"Get disk space info for physical or VM.",lang:"powershell",path:"General/Get-DiskSpaceOfPhysicalOrVirtualMachine.ps1",cat:"Utilities"},
+  {name:"Get-WindowsKey.ps1",desc:"Retrieve Windows product key.",lang:"powershell",path:"General/Get-WindowsKey.ps1",cat:"Utilities"},
+  {name:"List-OfProgramsInstalled.ps1",desc:"List all installed programs on Windows.",lang:"powershell",path:"General/List-OfProgramsInstalled.ps1",cat:"Utilities"},
+  {name:"List-WindowsUpdates.ps1",desc:"List Windows Update history.",lang:"powershell",path:"General/List-WindowsUpdates.ps1",cat:"Utilities"},
+  {name:"Search-KeywordOccurence.cob",desc:"Search for keyword occurrences in files (COBOL).",lang:"cobol",path:"General/Search-KeywordOccurence.cob",cat:"Utilities"},
+  // Gitea
+  {name:"GitHub2GiteaMirrorRepos.sh",desc:"Mirror GitHub repositories to Gitea.",lang:"bash",path:"Gitea/GitHub2GiteaMirrorRepos.sh",cat:"DevOps"},
+  // Github
+  {name:"Get-AllReposPrivateAndPublic.pl",desc:"List all GitHub repos (private + public).",lang:"perl",path:"Github/Get-AllReposPrivateAndPublic.pl",cat:"DevOps"},
+  {name:"Get-Commits.php",desc:"Get commit data from GitHub via PHP.",lang:"php",path:"Github/Get-Commits.php",cat:"DevOps"},
+  {name:"Get-CsprojCommitsVsAllCommitsInGithubCli1Year.pl",desc:"Compare .csproj commits to total commits over 1 year.",lang:"perl",path:"Github/Get-CsprojCommitsVsAllCommitsInGithubCli1Year.pl",cat:"DevOps"},
+  {name:"Get-GitHubUserInformationViaApi.ps1",desc:"Get GitHub user info via API.",lang:"powershell",path:"Github/Get-GitHubUserInformationViaApi.ps1",cat:"DevOps"},
+  {name:"Get-ListOfPublicRepositoriesByUsername.ps1",desc:"List public repos for a GitHub username.",lang:"powershell",path:"Github/Get-ListOfPublicRepositoriesByUsername.ps1",cat:"DevOps"},
+  {name:"Get-MarkdownFileAndDisplayFromGithub.html",desc:"Fetch and display a Markdown file from GitHub.",lang:"html",path:"Github/Get-MarkdownFileAndDisplayFromGithub.html",cat:"DevOps"},
+  {name:"Get-MdChangesLocally.ps1",desc:"Get local Markdown file changes.",lang:"powershell",path:"Github/Get-MdChangesLocally.ps1",cat:"DevOps"},
+  {name:"Get-RunnerGroups.sh",desc:"Get GitHub Actions runner groups.",lang:"bash",path:"Github/Get-RunnerGroups.sh",cat:"DevOps"},
+  {name:"HighCommitCount.html",desc:"Visualize high commit count data.",lang:"html",path:"Github/HighCommitCount.html",cat:"DevOps"},
+  {name:"List-IssuesOnSite.php",desc:"List GitHub issues via PHP.",lang:"php",path:"Github/List-IssuesOnSite.php",cat:"DevOps"},
+  {name:"Synology-DownloadAllReposInAccount.sh",desc:"Download all repos from GitHub to Synology.",lang:"bash",path:"Github/Synology-DownloadAllReposInAccount.sh",cat:"DevOps"},
+  {name:"Test-IfGitHubActionRunnerServiceIsRunningOnWindowsAgent.ps1",desc:"Test if GitHub Actions runner service is running on Windows.",lang:"powershell",path:"Github/Test-IfGitHubActionRunnerServiceIsRunningOnWindowsAgent.ps1",cat:"DevOps"},
+  {name:"Update-GithubTxtFileInRepoWithJavaScript.html",desc:"Update a text file in a GitHub repo via JS.",lang:"html",path:"Github/Update-GithubTxtFileInRepoWithJavaScript.html",cat:"DevOps"},
+  {name:"changeMyDataWithApiFromJsScript.txt",desc:"JS script template for GitHub API data changes.",lang:"javascript",path:"Github/changeMyDataWithApiFromJsScript.txt",cat:"DevOps"},
+  {name:"Get-team_secret_rotation_view.sh",desc:"View GitHub team secret rotation status.",lang:"bash",path:"Github/Github_CLI/Get-team_secret_rotation_view.sh",cat:"DevOps"},
+  // Habit_Trackers
+  {name:"habit_gui.pl",desc:"Habit tracker with Perl GUI.",lang:"perl",path:"Habit_Trackers/habit_gui.pl",cat:"Productivity"},
+  {name:"habit.html",desc:"Web-based habit tracker.",lang:"html",path:"Habit_Trackers/habit.html",cat:"Productivity"},
+  // Iac
+  {name:"0-instructions-preflight.ps1",desc:"Preflight instructions for WSL/Docker setup.",lang:"powershell",path:"Iac/0-instructions-preflight.ps1",cat:"DevOps"},
+  {name:"1-bootstrap-wsl-docker.ps1",desc:"Bootstrap WSL and Docker environment.",lang:"powershell",path:"Iac/1-bootstrap-wsl-docker.ps1",cat:"DevOps"},
+  {name:"2-postreboot-docker-verify.ps1",desc:"Verify Docker setup after reboot.",lang:"powershell",path:"Iac/2-postreboot-docker-verify.ps1",cat:"DevOps"},
+  // Input_Manipulation
+  {name:"infowars.sh",desc:"Input manipulation script.",lang:"bash",path:"Input_Manipulation/infowars.sh",cat:"Utilities"},
+  {name:"kvm_typer.ps1",desc:"KVM keyboard typer automation (PowerShell).",lang:"powershell",path:"Input_Manipulation/kvm_typer.ps1",cat:"Utilities"},
+  {name:"kvm_typer.py",desc:"KVM keyboard typer automation (Python).",lang:"python",path:"Input_Manipulation/kvm_typer.py",cat:"Utilities"},
+  {name:"Pressed-KeyDetector.ps1",desc:"Detect pressed keys in KVM session.",lang:"powershell",path:"Input_Manipulation/Pressed-KeyDetector.ps1",cat:"Utilities"},
+  // Install
+  {name:"Docker-Install.sh",desc:"Install Docker on Linux.",lang:"bash",path:"Install/Docker-Install.sh",cat:"DevOps"},
+  {name:"InstallCustomFonts.sh",desc:"Install custom system fonts.",lang:"bash",path:"Install/InstallCustomFonts.sh",cat:"DevOps"},
+  {name:"Install-SetupEnviormentForCobolOnLinux.sh",desc:"Set up a COBOL development environment on Linux.",lang:"bash",path:"Install/Install-SetupEnviormentForCobolOnLinux.sh",cat:"DevOps"},
+  {name:"Python3-Install.ps1",desc:"Install Python 3 on Windows.",lang:"powershell",path:"Install/Python3-Install.ps1",cat:"DevOps"},
+  {name:"VisualStudio2019-DownloadWithOutEmail.ps1",desc:"Download Visual Studio 2019 without email prompt.",lang:"powershell",path:"Install/VisualStudio2019-DownloadWithOutEmail.ps1",cat:"DevOps"},
+  {name:"VisualStudioCode-Install.sh",desc:"Install VS Code on Linux.",lang:"bash",path:"Install/VisualStudioCode-Install.sh",cat:"DevOps"},
+  {name:"WindowsAgentHardening.ps1",desc:"Harden a Windows agent machine.",lang:"powershell",path:"Install/WindowsAgentHardening.ps1",cat:"DevOps"},
+  // Journal
+  {name:"Write-EventToTextFile.ps1",desc:"Write events to a text log file.",lang:"powershell",path:"Journal/Write-EventToTextFile.ps1",cat:"Productivity"},
+  // Linux
+  {name:"Get-EnviormentVariablesInList.sh",desc:"List environment variables on Linux.",lang:"bash",path:"Linux/Get-EnviormentVariablesInList.sh",cat:"Systems"},
+  {name:"PopOS/BeeBeepInstall.sh",desc:"Install BeeBeeP messenger on Pop!_OS.",lang:"bash",path:"Linux/PopOS/BeeBeepInstall.sh",cat:"Systems"},
+  {name:"PopOS/ChangeDockColor.sh",desc:"Change Pop!_OS dock color.",lang:"bash",path:"Linux/PopOS/ChangeDockColor.sh",cat:"Systems"},
+  {name:"PopOS/New-PcSetup.pl",desc:"Automate new PC setup on Pop!_OS.",lang:"perl",path:"Linux/PopOS/New-PcSetup.pl",cat:"Systems"},
+  // MetaData
+  {name:"Get-Mp3MetaInfo.ps1",desc:"Extract MP3 file metadata.",lang:"powershell",path:"MetaData/Get-Mp3MetaInfo.ps1",cat:"Media"},
+  // Minecraft
+  {name:"Create-MInecraftBackup.ps1",desc:"Create a Minecraft server backup.",lang:"powershell",path:"Minecraft/Create-MInecraftBackup.ps1",cat:"Gaming"},
+  {name:"Get-ExtractMinecraftTextures.ps1",desc:"Extract textures from a Minecraft server.",lang:"powershell",path:"Minecraft/Get-ExtractMinecraftTextures.ps1",cat:"Gaming"},
+  {name:"Get-InfoFromServerIp.py",desc:"Get info from a Minecraft server IP.",lang:"python",path:"Minecraft/Get-InfoFromServerIp.py",cat:"Gaming"},
+  {name:"mc_faces_server.py",desc:"Minecraft server faces/status utility.",lang:"python",path:"Minecraft/mc_faces_server.py",cat:"Gaming"},
+  {name:"minecraft-vanilla-server.yml",desc:"Docker compose for vanilla Minecraft server.",lang:"yaml",path:"Minecraft/minecraft-vanilla-server.yml",cat:"Gaming"},
+  {name:"PackResourceGuiDashboard.py",desc:"GUI dashboard for Minecraft resource packs.",lang:"python",path:"Minecraft/PackResourceGuiDashboard.py",cat:"Gaming"},
+  // Networking
+  {name:"Get-LinuxWifPasswordHistory.sh",desc:"Get Wi-Fi password history on Linux.",lang:"bash",path:"Networking/Get-LinuxWifPasswordHistory.sh",cat:"Systems"},
+  {name:"Get-ListOfAllBluetoothDevicesConnected.ps1",desc:"List all connected Bluetooth devices.",lang:"powershell",path:"Networking/Get-ListOfAllBluetoothDevicesConnected.ps1",cat:"Systems"},
+  {name:"List-ComputersOnSameNetwork.ps1",desc:"List computers on the same network.",lang:"powershell",path:"Networking/List-ComputersOnSameNetwork.ps1",cat:"Systems"},
+  {name:"Monitor-NetworkCardEnableIfDisabled.ps1",desc:"Monitor and auto-enable network card.",lang:"powershell",path:"Networking/Monitor-NetworkCardEnableIfDisabled.ps1",cat:"Systems"},
+  {name:"Ping-IpAndPortChangingOnlyLast.ps1",desc:"Ping IPs with changing last octet.",lang:"powershell",path:"Networking/Ping-IpAndPortChangingOnlyLast.ps1",cat:"Systems"},
+  // Outlook
+  {name:"Convert-MsgToMd.ps1",desc:"Convert .msg Outlook files to Markdown.",lang:"powershell",path:"Outlook/Convert-MsgToMd.ps1",cat:"Productivity"},
+  // Pcloud
+  {name:"Upload-SingleFile.py",desc:"Upload a single file to Pcloud.",lang:"python",path:"Pcloud/Upload-SingleFile.py",cat:"Cloud"},
+  // Philips Hue
+  {name:"ConnectToBridgeAndTest_GUI.py",desc:"Connect to and test Philips Hue bridge (GUI).",lang:"python",path:"Philips_Hue_Lights/ConnectToBridgeAndTest_GUI.py",cat:"Smart Home"},
+  {name:"ConnectToBridgeAndTest.py",desc:"Connect to and test Philips Hue bridge (CLI).",lang:"python",path:"Philips_Hue_Lights/ConnectToBridgeAndTest.py",cat:"Smart Home"},
+  // Podcast
+  {name:"tbc_podman.sh",desc:"Podcast container setup with Podman.",lang:"bash",path:"Podcast/tbc_podman.sh",cat:"Media"},
+  // Portainer
+  {name:"pihole.yml",desc:"Portainer stack for Pi-hole.",lang:"yaml",path:"Portainer/pihole.yml",cat:"DevOps"},
+  {name:"redmine.yml",desc:"Portainer stack for Redmine.",lang:"yaml",path:"Portainer/redmine.yml",cat:"DevOps"},
+  // Redmine
+  {name:"JiraCsv2RedmineCsv.py",desc:"Convert Jira CSV export to Redmine CSV format.",lang:"python",path:"Redmine/JiraCsv2RedmineCsv.py",cat:"Data"},
+  // RSS
+  {name:"BBC-NewsFeed.ps1",desc:"Fetch BBC news RSS feed.",lang:"powershell",path:"RSS/BBC-NewsFeed.ps1",cat:"Media"},
+  // Scrappers
+  {name:"Get-IcoFromWebsite.ps1",desc:"Extract favicons (.ico) from websites.",lang:"powershell",path:"Scrappers/Get-IcoFromWebsite.ps1",cat:"Utilities"},
+  {name:"PutnamCounty.ps1",desc:"Scrape Putnam County data.",lang:"powershell",path:"Scrappers/PutnamCounty.ps1",cat:"Utilities"},
+  // ScriptRunner
+  {name:"Get-FiltersWithNameEmailCountIdAndJql.groovy",desc:"Jira ScriptRunner: get filters with metadata.",lang:"groovy",path:"ScriptRunner/Get-FiltersWithNameEmailCountIdAndJql.groovy",cat:"Atlassian"},
+  {name:"Get-PublicFiltersAndDashboards.groovy",desc:"Jira ScriptRunner: get public filters/dashboards.",lang:"groovy",path:"ScriptRunner/Get-PublicFiltersAndDashboards.groovy",cat:"Atlassian"},
+  {name:"Get-SingleUserFiltersSimplified.groovy",desc:"Jira ScriptRunner: get a user's filters.",lang:"groovy",path:"ScriptRunner/Get-SingleUserFiltersSimplified.groovy",cat:"Atlassian"},
+  {name:"Get-UserDetailsDataCenter.groovy",desc:"Jira ScriptRunner: get user details (DC).",lang:"groovy",path:"ScriptRunner/Get-UserDetailsDataCenter.groovy",cat:"Atlassian"},
+  {name:"PPM-Get-WorkCompletedOrUpdated.groovy",desc:"Jira ScriptRunner: get PPM work items.",lang:"groovy",path:"ScriptRunner/PPM-Get-WorkCompletedOrUpdated.groovy",cat:"Atlassian"},
+  // Security
+  {name:"Collect-RansomwareLogs.ps1",desc:"Collect ransomware detection logs.",lang:"powershell",path:"Security/Collect-RansomwareLogs.ps1",cat:"Security"},
+  {name:"CVE-2020-1472.ps1",desc:"Check for CVE-2020-1472 (Zerologon) vulnerability.",lang:"powershell",path:"Security/CVE-2020-1472.ps1",cat:"Security"},
+  {name:"Get-ActiveDirectoryUserLoginLogs.ps1",desc:"Get AD user login logs.",lang:"powershell",path:"Security/Get-ActiveDirectoryUserLoginLogs.ps1",cat:"Security"},
+  {name:"Get-EverySHA.pl",desc:"Calculate SHA hashes for all files in a directory.",lang:"perl",path:"Security/Get-EverySHA.pl",cat:"Security"},
+  {name:"Get-NameTypeSizeOfFile.pl",desc:"Get file name, type, and size (Perl).",lang:"perl",path:"Security/Get-NameTypeSizeOfFile.pl",cat:"Security"},
+  {name:"Get-NameTypeSizeOfFileSaveToUsb.ps1",desc:"Get file info and save to USB.",lang:"powershell",path:"Security/Get-NameTypeSizeOfFileSaveToUsb.ps1",cat:"Security"},
+  {name:"Get-Sha.ps1",desc:"Calculate SHA hash of a file.",lang:"powershell",path:"Security/Get-Sha.ps1",cat:"Security"},
+  {name:"Get-WindowsUpdatesList.ps1",desc:"Get list of Windows updates.",lang:"powershell",path:"Security/Get-WindowsUpdatesList.ps1",cat:"Security"},
+  {name:"Get-WindowsVersion.ps1",desc:"Get Windows version info.",lang:"powershell",path:"Security/Get-WindowsVersion.ps1",cat:"Security"},
+  {name:"GUI-Get-FileNameTypeSize.ps1",desc:"GUI tool for file name, type, and size.",lang:"powershell",path:"Security/GUI-Get-FileNameTypeSize.ps1",cat:"Security"},
+  {name:"GUI-GetFileNameTypeSize.py",desc:"GUI tool for file name, type, and size (Python).",lang:"python",path:"Security/GUI-GetFileNameTypeSize.py",cat:"Security"},
+  {name:"install_malware_tools.sh",desc:"Install malware detection tools on Linux.",lang:"bash",path:"Security/install_malware_tools.sh",cat:"Security"},
+  {name:"Scan-For_0e0899.ps1",desc:"Scan for specific malware signature.",lang:"powershell",path:"Security/Scan-For_0e0899.ps1",cat:"Security"},
+  {name:"search_files_gui.py",desc:"GUI file search utility.",lang:"python",path:"Security/search_files_gui.py",cat:"Security"},
+  {name:"Search-ForSpecifcFiles.sh",desc:"Search for specific files on Linux.",lang:"bash",path:"Security/Search-ForSpecifcFiles.sh",cat:"Security"},
+  {name:"Windows-IR-Toolkit.ps1",desc:"Windows Incident Response toolkit.",lang:"powershell",path:"Security/Windows-IR-Toolkit.ps1",cat:"Security"},
+  {name:"Windows_QuickAndDirty.ps1",desc:"Quick Windows forensics utility.",lang:"powershell",path:"Security/Windows_QuickAndDirty.ps1",cat:"Security"},
+  // SnapDownloader
+  {name:"Move-Mp3Files.ps1",desc:"Move MP3 files via SnapDownloader.",lang:"powershell",path:"SnapDownloader/Move-Mp3Files.ps1",cat:"Media"},
+  // SSH
+  {name:"Get-SshKeyLinux.sh",desc:"Get SSH key on Linux.",lang:"bash",path:"SSH/Get-SshKeyLinux.sh",cat:"Systems"},
+  {name:"Get-SshKey.ps1",desc:"Get SSH key on Windows.",lang:"powershell",path:"SSH/Get-SshKey.ps1",cat:"Systems"},
+  // Steam
+  {name:"Remove-Addons.ps1",desc:"Remove ARMA CWA addons.",lang:"powershell",path:"Steam/ARMA_CWA/Remove-Addons.ps1",cat:"Gaming"},
+  {name:"Get-DiscountsOnCoopGames.pl",desc:"Check for Steam coop game discounts.",lang:"perl",path:"Steam/Get-DiscountsOnCoopGames.pl",cat:"Gaming"},
+  // Stocks
+  {name:"3M-CLI.py",desc:"3M stock data CLI tool.",lang:"python",path:"Stocks/3M-CLI.py",cat:"Finance"},
+  {name:"3M-GUI-CSV.py",desc:"3M stock data with CSV GUI.",lang:"python",path:"Stocks/3M-GUI-CSV.py",cat:"Finance"},
+  {name:"3m-No-Gui.py",desc:"3M stock strategy without GUI.",lang:"python",path:"Stocks/3m-No-Gui.py",cat:"Finance"},
+  {name:"3M-Strategy-CSV-Breakup.html",desc:"3M strategy CSV breakdown visualizer.",lang:"html",path:"Stocks/3M-Strategy-CSV-Breakup.html",cat:"Finance"},
+  {name:"3M-Strategy-Stock-Picker.html",desc:"3M strategy stock picker.",lang:"html",path:"Stocks/3M-Strategy-Stock-Picker.html",cat:"Finance"},
+  {name:"3M-Strategy-Yahoo.html",desc:"3M strategy with Yahoo Finance data.",lang:"html",path:"Stocks/3M-Strategy-Yahoo.html",cat:"Finance"},
+  {name:"chart.js",desc:"Stock chart rendering utilities.",lang:"javascript",path:"Stocks/chart.js",cat:"Finance"},
+  {name:"dataProcessing.js",desc:"Stock data processing utilities.",lang:"javascript",path:"Stocks/dataProcessing.js",cat:"Finance"},
+  {name:"eventHandlers.js",desc:"Stock UI event handlers.",lang:"javascript",path:"Stocks/eventHandlers.js",cat:"Finance"},
+  {name:"MA20-50-200-Stratagy.py",desc:"Moving average crossover strategy (20/50/200).",lang:"python",path:"Stocks/MA20-50-200-Stratagy.py",cat:"Finance"},
+  {name:"MA20-50-200-Strategy.html",desc:"MA crossover strategy dashboard.",lang:"html",path:"Stocks/MA20-50-200-Strategy.html",cat:"Finance"},
+  {name:"uiUpdates.js",desc:"Stock UI update utilities.",lang:"javascript",path:"Stocks/uiUpdates.js",cat:"Finance"},
+  // Torrents
+  {name:"PiDownloadTorrents.pl",desc:"Download torrents on Raspberry Pi.",lang:"perl",path:"Torrents/PiDownloadTorrents.pl",cat:"Media"},
+  // WaveFunctionCollapse
+  {name:"SinglePathWfc.html",desc:"Wave Function Collapse - single path visualization.",lang:"html",path:"WaveFunctionCollapse/SinglePathWfc.html",cat:"Experimental"},
+  {name:"MultipalePathWfc.html",desc:"Wave Function Collapse - multiple path visualization.",lang:"html",path:"WaveFunctionCollapse/MultipalePathWfc.html",cat:"Experimental"},
+  {name:"GameSinglePathWfc.html",desc:"Wave Function Collapse game.",lang:"html",path:"WaveFunctionCollapse/GameSinglePathWfc.html",cat:"Experimental"},
+  // YAML
+  {name:"GH_Action_Debug_CI.yml",desc:"GitHub Action: debug CI pipeline.",lang:"yaml",path:"YAML/GH_Action_Debug_CI.yml",cat:"DevOps"},
+  {name:"GH_Action_Global_Failure_Debug_Job.yml",desc:"GitHub Action: global failure debug job.",lang:"yaml",path:"YAML/GH_Action_Global_Failure_Debug_Job.yml",cat:"DevOps"},
+  {name:"GH_Capture_CI_Telemetry.yml",desc:"GitHub Action: capture CI telemetry.",lang:"yaml",path:"YAML/GH_Capture_CI_Telemetry.yml",cat:"DevOps"},
+  {name:"JIRA-Done-Issues-Deleted-Weekly.yml",desc:"GitHub Action: weekly cleanup of Done Jira issues.",lang:"yaml",path:"YAML/JIRA-Done-Issues-Deleted-Weekly.yml",cat:"DevOps"},
+  {name:"Manual-PlaywrightTest.yml",desc:"GitHub Action: manual Playwright test trigger.",lang:"yaml",path:"YAML/Manual-PlaywrightTest.yml",cat:"DevOps"},
+  // YouTube
+  {name:"Get-Mp3AudioFileFromYouTubeUrl.py",desc:"Extract MP3 audio from YouTube URL.",lang:"python",path:"YouTube/Get-Mp3AudioFileFromYouTubeUrl.py",cat:"Media"},
+  {name:"GUI-Get-Mp3AudioFileFromYouTubeUrl.py",desc:"GUI tool for YouTube MP3 extraction.",lang:"python",path:"YouTube/GUI-Get-Mp3AudioFileFromYouTubeUrl.py",cat:"Media"},
+];
+
+// Category config
+const CATEGORIES = {
+  "DevOps":      {icon:"⚙️", color:"#3b82f6"},
+  "Atlassian":   {icon:"🔗", color:"#0052cc"},
+  "Security":    {icon:"🛡️", color:"#ef4444"},
+  "Systems":     {icon:"🖥️", color:"#64748b"},
+  "Data":        {icon:"📊", color:"#22c55e"},
+  "Cloud":       {icon:"☁️", color:"#06b6d4"},
+  "Utilities":   {icon:"🔧", color:"#f59e0b"},
+  "Productivity":{icon:"📋", color:"#a855f7"},
+  "Media":       {icon:"🎵", color:"#ec4899"},
+  "Gaming":      {icon:"🎮", color:"#14b8a6"},
+  "Finance":     {icon:"📈", color:"#22c55e"},
+  "Smart Home":  {icon:"💡", color:"#f97316"},
+  "Forms":       {icon:"📝", color:"#8b5cf6"},
+  "Experimental":{icon:"🧪", color:"#f59e0b"},
+};
+
+const LANG_MAP = {
+  powershell:"powershell", python:"python", bash:"bash", perl:"perl",
+  yaml:"yaml", go:"go", php:"php", sql:"sql", html:"html",
+  groovy:"groovy", javascript:"js", cobol:"cobol"
+};
+
+// Build nav
+const navLinks = document.getElementById("navLinks");
+const catNames = Object.keys(CATEGORIES);
+catNames.forEach(cat => {
+  const a = document.createElement("a");
+  a.href = "#" + cat;
+  a.textContent = cat;
+  a.addEventListener("click", e => {
+    e.preventDefault();
+    document.getElementById(cat).scrollIntoView({behavior:"smooth"});
+  });
+  navLinks.appendChild(a);
+});
+
+// Build hero stats
+const totalScripts = TOOLS.length;
+const langCounts = {};
+TOOLS.forEach(t => { langCounts[t.lang] = (langCounts[t.lang]||0)+1; });
+const catCount = catNames.length;
+const statsEl = document.getElementById("heroStats");
+[
+  [totalScripts, "Scripts"],
+  [catCount, "Categories"],
+  [Object.keys(langCounts).length, "Languages"],
+].forEach(([num,label]) => {
+  statsEl.innerHTML += `<div class="hero-stat"><div class="num">${num}</div><div class="label">${label}</div></div>`;
+});
+
+// Build main content
+const main = document.getElementById("mainContainer");
+catNames.forEach(cat => {
+  const tools = TOOLS.filter(t => t.cat === cat);
+  const cfg = CATEGORIES[cat];
+  const section = document.createElement("section");
+  section.className = "category";
+  section.id = cat;
+  section.innerHTML = `
+    <div class="category-header">
+      <div class="cat-icon" style="background:${cfg.color}22;color:${cfg.color}">${cfg.icon}</div>
+      <span class="cat-title">${cat}</span>
+      <span class="cat-count">${tools.length}</span>
+    </div>
+    <div class="tool-grid" id="grid-${cat}"></div>
+  `;
+  main.appendChild(section);
+
+  const grid = section.querySelector(".tool-grid");
+  tools.forEach(tool => {
+    const langClass = "lang-" + LANG_MAP[tool.lang] || "lang-python";
+    const langLabel = tool.lang.toUpperCase();
+    const card = document.createElement("a");
+    card.className = "tool-card";
+    card.href = tool.path;
+    card.innerHTML = `
+      <div class="tool-top">
+        <span class="tool-lang ${langClass}">${langLabel}</span>
+        <span class="tool-name">${tool.name}</span>
+      </div>
+      <div class="tool-desc">${tool.desc}</div>
+      <div class="tool-path">${tool.path}</div>
+    `;
+    grid.appendChild(card);
+  });
+});
+
+// Search
+const searchInput = document.getElementById("searchInput");
+const noResults = document.getElementById("noResults");
+searchInput.addEventListener("input", () => {
+  const q = searchInput.value.toLowerCase().trim();
+  let totalVisible = 0;
+  document.querySelectorAll(".tool-card").forEach(card => {
+    const name = card.querySelector(".tool-name").textContent.toLowerCase();
+    const desc = card.querySelector(".tool-desc").textContent.toLowerCase();
+    const path = card.querySelector(".tool-path").textContent.toLowerCase();
+    const match = !q || name.includes(q) || desc.includes(q) || path.includes(q);
+    card.classList.toggle("hidden", !match);
+    if (match) totalVisible++;
+  });
+  // Show/hide categories
+  document.querySelectorAll(".category").forEach(cat => {
+    const visible = cat.querySelectorAll(".tool-card:not(.hidden)").length;
+    cat.style.display = visible ? "" : "none";
+  });
+  noResults.classList.toggle("show", totalVisible === 0);
+});
+
+// Active nav link on scroll
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    const id = entry.target.id;
+    document.querySelectorAll(".nav-links a").forEach(a => {
+      a.classList.toggle("active", a.getAttribute("href") === "#" + id && entry.isIntersecting);
+    });
+  });
+}, {rootMargin:"-20% 0px -60% 0px"});
+document.querySelectorAll(".category").forEach(cat => observer.observe(cat));
+</script>
+</body>
+</html>
