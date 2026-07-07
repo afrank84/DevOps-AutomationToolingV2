@@ -27,10 +27,11 @@
     .nav-links::-webkit-scrollbar{display:none}
     .nav-links a{color:var(--text2);text-decoration:none;font-size:.82rem;padding:.35rem .65rem;border-radius:6px;white-space:nowrap;transition:all .15s}
     .nav-links a:hover,.nav-links a.active{color:#fff;background:var(--bg3)}
-    .nav-search{margin-left:auto;position:relative;flex-shrink:0}
-    .nav-search input{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:.35rem .75rem .35rem 2rem;border-radius:8px;font-size:.82rem;width:200px;outline:none;transition:border .15s}
-    .nav-search input:focus{border-color:var(--accent)}
-    .nav-search svg{position:absolute;left:.6rem;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3)}
+    .search-bar{max-width:1400px;margin:0 auto;padding:1rem 2rem 0}
+    .search-bar-inner{position:relative;max-width:100%}
+    .search-bar input{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:.6rem 1rem .6rem 2.8rem;border-radius:10px;font-size:.95rem;width:100%;outline:none;transition:border .15s}
+    .search-bar input:focus{border-color:var(--accent)}
+    .search-bar svg{position:absolute;left:1rem;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text3)}
 
     /* HERO */
     .hero{max-width:1400px;margin:0 auto;padding:4rem 2rem 3rem;text-align:center}
@@ -93,10 +94,11 @@
     /* RESPONSIVE */
     @media(max-width:768px){
       nav{padding:0 1rem}
+      .search-bar{padding:.75rem 1rem 0}
+      .search-bar input{font-size:.85rem;padding:.5rem .85rem .5rem 2.4rem}
       .hero{padding:2.5rem 1rem 2rem}
       .container{padding:0 1rem 3rem}
       .tool-grid{grid-template-columns:1fr}
-      .nav-search input{width:140px}
       .hero h1{font-size:1.8rem}
     }
   </style>
@@ -110,12 +112,15 @@
       DevOps Tooling
     </div>
     <div class="nav-links" id="navLinks"></div>
-    <div class="nav-search">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="search" id="searchInput" placeholder="Search scripts..." autocomplete="off">
-    </div>
   </div>
 </nav>
+
+<div class="search-bar">
+  <div class="search-bar-inner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="search" id="searchInput" placeholder="Search scripts..." autocomplete="off">
+  </div>
+</div>
 
 <section class="hero">
   <div class="hero-badge"><span class="dot"></span> Active Toolkit</div>
