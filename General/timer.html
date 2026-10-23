@@ -1,0 +1,284 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fullscreen Timer</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background: #101010;
+    color: #f5f5f5;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #display {
+    font-size: min(24vw, 65vh);
+    font-weight: 700;
+    letter-spacing: -0.055em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    white-space: nowrap;
+    user-select: none;
+    cursor: pointer;
+  }
+
+  #display.finished {
+    color: #ff5555;
+  }
+
+  .controls {
+    position: absolute;
+    bottom: 5vh;
+    display: flex;
+    gap: 14px;
+    opacity: 0.35;
+    transition: opacity .2s;
+  }
+
+  .controls:hover,
+  .controls:focus-within {
+    opacity: 1;
+  }
+
+  button {
+    background: #252525;
+    color: white;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 12px 22px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  button:hover { background: #383838; }
+
+  #editor {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: #101010;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
+    z-index: 5;
+  }
+
+  #editor.open { display: flex; }
+
+  .inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: clamp(30px, 7vw, 100px);
+  }
+
+  input {
+    width: 2.4em;
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid #555;
+    color: white;
+    font: inherit;
+    text-align: center;
+    outline: none;
+  }
+
+  input:focus { border-color: white; }
+
+  .hint {
+    position: absolute;
+    bottom: 15px;
+    color: #555;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div id="display" title="Click to set time">05:00</div>
+
+<div class="controls">
+  <button id="startBtn">Start</button>
+  <button id="resetBtn">Reset</button>
+  <button id="setBtn">Set Time</button>
+  <button id="fullBtn">Fullscreen</button>
+</div>
+
+<div id="editor">
+  <div class="inputs">
+    <input id="hours" type="number" min="0" max="99" value="0" aria-label="Hours">
+    :
+    <input id="minutes" type="number" min="0" max="59" value="5" aria-label="Minutes">
+    :
+    <input id="seconds" type="number" min="0" max="59" value="0" aria-label="Seconds">
+  </div>
+  <button id="applyBtn">Set Timer</button>
+</div>
+
+<div class="hint">SPACE = Start/Pause · R = Reset · F = Fullscreen</div>
+
+<script>
+  const display = document.getElementById("display");
+  const startBtn = document.getElementById("startBtn");
+  const editor = document.getElementById("editor");
+
+  let initial = 300;
+  let remaining = initial;
+  let running = false;
+  let endTime = 0;
+  let interval = null;
+
+  function formatTime(total) {
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    const pad = n => String(n).padStart(2, "0");
+
+    return h > 0
+      ? `${pad(h)}:${pad(m)}:${pad(s)}`
+      : `${pad(m)}:${pad(s)}`;
+  }
+
+  function render() {
+    display.textContent = formatTime(remaining);
+    display.classList.toggle("finished", remaining === 0);
+  }
+
+  function tick() {
+    remaining = Math.max(
+      0,
+      Math.ceil((endTime - performance.now()) / 1000)
+    );
+
+    render();
+
+    if (remaining === 0) {
+      pause();
+    }
+  }
+
+  function start() {
+    if (running || remaining <= 0) return;
+
+    running = true;
+    endTime = performance.now() + remaining * 1000;
+    startBtn.textContent = "Pause";
+    interval = setInterval(tick, 100);
+  }
+
+  function pause() {
+    if (!running) return;
+
+    tickRemaining();
+    running = false;
+    clearInterval(interval);
+    interval = null;
+    startBtn.textContent = "Start";
+  }
+
+  function tickRemaining() {
+    remaining = Math.max(
+      0,
+      Math.ceil((endTime - performance.now()) / 1000)
+    );
+    render();
+  }
+
+  function toggle() {
+    running ? pause() : start();
+  }
+
+  function reset() {
+    if (running) pause();
+    remaining = initial;
+    render();
+  }
+
+  function openEditor() {
+    if (running) pause();
+
+    document.getElementById("hours").value =
+      Math.floor(initial / 3600);
+    document.getElementById("minutes").value =
+      Math.floor((initial % 3600) / 60);
+    document.getElementById("seconds").value =
+      initial % 60;
+
+    editor.classList.add("open");
+    document.getElementById("minutes").focus();
+  }
+
+  function applyTime() {
+    const h = Number(document.getElementById("hours").value);
+    const m = Number(document.getElementById("minutes").value);
+    const s = Number(document.getElementById("seconds").value);
+
+    if (
+      ![h, m, s].every(Number.isInteger) ||
+      h < 0 || h > 99 ||
+      m < 0 || m > 59 ||
+      s < 0 || s > 59
+    ) {
+      alert("Enter valid hours, minutes, and seconds.");
+      return;
+    }
+
+    initial = h * 3600 + m * 60 + s;
+    remaining = initial;
+    editor.classList.remove("open");
+    render();
+  }
+
+  function fullscreen() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen();
+    }
+  }
+
+  startBtn.onclick = toggle;
+  document.getElementById("resetBtn").onclick = reset;
+  document.getElementById("setBtn").onclick = openEditor;
+  document.getElementById("applyBtn").onclick = applyTime;
+  document.getElementById("fullBtn").onclick = fullscreen;
+  display.onclick = openEditor;
+
+  document.addEventListener("keydown", e => {
+    if (editor.classList.contains("open")) {
+      if (e.key === "Enter") applyTime();
+      if (e.key === "Escape") editor.classList.remove("open");
+      return;
+    }
+
+    if (["INPUT", "BUTTON"].includes(document.activeElement.tagName)) {
+      document.activeElement.blur();
+    }
+
+    if (e.code === "Space") {
+      e.preventDefault();
+      toggle();
+    }
+    if (e.key.toLowerCase() === "r") reset();
+    if (e.key.toLowerCase() === "f") fullscreen();
+  });
+
+  render();
+</script>
+</body>
+</html>
