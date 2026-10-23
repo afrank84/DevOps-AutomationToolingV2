@@ -16,7 +16,11 @@ for image in *.jpg *.jpeg *.png *.webp; do
   margin=$((width * 2 / 100))
 
   convert "$image" \
-    \( logo.png -resize "${logo_width}x" \) \
+    \( \
+      \( logo.png -resize "${logo_width}x" \) \
+      \( +clone -background black -shadow 65x5+3+5 \) \
+      +swap -background none -layers merge +repage \
+    \) \
     -gravity southeast \
     -geometry "+${margin}+${margin}" \
     -compose over -composite \
