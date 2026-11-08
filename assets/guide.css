@@ -1,0 +1,13 @@
+:root{color-scheme:dark;--bg:#0b1120;--panel:#111c2e;--text:#e2e8f0;--muted:#a8b6ca;--accent:#83bdff;--border:#334155;font-family:system-ui,sans-serif;line-height:1.7}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text)}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;padding:1rem max(1rem,calc((100vw - 1050px)/2));border-bottom:1px solid var(--border);background:var(--panel)}
+main{max-width:1050px;padding:1.5rem;margin:auto}a{color:var(--accent);text-underline-offset:.2em}a:hover{text-decoration-thickness:2px}
+h1{font-size:clamp(1.5rem,4vw,2.5rem);line-height:1.25;overflow-wrap:anywhere}h2,h3,h4{line-height:1.4;scroll-margin-top:1.5rem}h2{margin-top:2rem;padding-top:.8rem;border-top:1px solid var(--border)}
+nav{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.5rem 0}button{font:inherit;padding:.5rem 1rem;border:1px solid var(--border);border-radius:.5rem;background:var(--panel);color:var(--text);cursor:pointer}button[aria-pressed=true]{background:#215ab0;border-color:#83bdff}a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+pre{padding:1rem;background:var(--panel);border:1px solid var(--border);border-radius:.5rem;overflow:auto;max-height:75vh}pre code{white-space:pre-wrap;overflow-wrap:anywhere}code{font-size:.9em;color:#b8deff}blockquote{border-left:3px solid var(--accent);margin-left:0;padding-left:1rem;color:var(--muted)}
+table{display:block;overflow:auto;border-collapse:collapse;width:100%}td,th{border:1px solid var(--border);padding:.6rem;text-align:left}img{max-width:100%}footer{display:flex;flex-wrap:wrap;gap:1.5rem;padding:1.5rem 0;margin-top:2rem;border-top:1px solid var(--border)}#breadcrumb,#status{color:var(--muted)}#folder-files{columns:2;list-style:none;padding:0}#folder-files li{margin:.5rem 0;overflow-wrap:anywhere;break-inside:avoid}[hidden]{display:none!important}.selected-section{border-left:3px solid var(--accent);padding-left:.8rem}#guide{overflow-wrap:anywhere}
+@media(max-width:600px){main{padding:1rem}header span{display:none}#folder-files{columns:1}}
+.preview-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-bottom:.75rem}
+.preview-toolbar span{margin-right:auto;font-weight:600}.preview-note{color:var(--muted);font-size:.9rem}
+#preview-frame{display:block;width:100%;height:75vh;min-height:420px;border:1px solid var(--border);border-radius:.5rem;background:white;color-scheme:normal}
+#preview-frame:fullscreen{height:100vh;border:0;border-radius:0}

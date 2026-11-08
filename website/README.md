@@ -1,10 +1,60 @@
 # Maintaining the personal knowledge base
 
+## Existing static hosting and file clicks
+
+The current live root is `index.html`. Its cards now open
+`guide.html?file=<repository-path>` rather than a raw script. This reader works
+on ordinary static hosting immediately after these files deploy; no Cloudflare
+build-setting migration is needed. It renders the owning folder README, selects
+the matching file section when available, and offers Markdown/source views.
+HTML files have an explicit **HTML Preview** tab with reload and fullscreen
+controls. The iframe loads only when selected and unloads when leaving the tab.
+Its sandbox permits scripts, forms, downloads, and dialogs without granting
+same-origin access to the reader, its storage, or its document. Relative assets
+resolve at the original file path. Features needing browser storage or a normal
+origin may need the secondary standalone launch link.
+
+After adding files or folder READMEs, refresh the static discovery index:
+
+```bash
+python3 website/build_folder_index.py
+```
+
+Commit `assets/folders.json` with the source change. This index contains paths,
+not a second maintained copy of the explanations. MkDocs builds regenerate the
+deployed index and include the same reader/assets/raw READMEs automatically.
+The root catalog still has its existing card registrations; add new catalog
+entries there, while MkDocs folder inventories discover supported scripts.
+
+Use `## [filename.ext](filename.ext)` for a file explanation heading, followed
+by behavior, setup, usage, outputs, and side effects. This keeps the README
+readable on GitHub and lets the reader select that explanation when a card is
+clicked. Existing `Source:` paragraphs after headings are also supported.
+Files without a matching authored section show the folder guide and a clearly
+labeled outline derived from source comments/declarations. Do not describe that
+outline as reviewed documentation or an executed test.
+
+To check the actual static-host experience:
+
+```bash
+python3 -m http.server 8002 --bind 127.0.0.1
+# In another terminal with Playwright and Chromium available:
+node website/tests/reader.cjs http://127.0.0.1:8002
+```
+
+The browser checks follow every catalog file card and verify explanation
+selection, Markdown/source fidelity, view history, mobile width, isolation of
+HTML tool source, heading links, sanitization, and invalid paths. They do not
+execute the repository's automation tools. Test the optional MkDocs output the
+same way by serving `site/`. Publication and the live site's deployment are
+separate from these local checks.
+
 The repository remains a collection of independent scripts. Folder READMEs are
 the canonical explanations, and MkDocs builds the website directly from them.
-Only [SSH](../SSH/README.md) has new tool explanations in this pilot. Existing
-notes and the original catalog are preserved; undocumented folders show source
-inventories instead of invented explanations.
+Source-reviewed folder guides include [SSH](../SSH/README.md),
+[Conversion](../Conversion/README.md), [GitHub](../Github/README.md),
+[General](../General/README.md), and service/system utilities. Existing notes
+and the original catalog are preserved. Documentation gaps are explicitly labeled.
 
 ## Contents
 
@@ -49,6 +99,24 @@ heading links, source links, and a search such as `passphrase` or
 `global Git identity`. Do not run workstation setup scripts to test the PKB.
 
 ## Discovery, navigation, and search
+
+### One guide per folder, two website views
+
+The unit of documentation is a **folder**, not an individual script page.
+Each folder's README should explain what its files actually do, how to choose
+between implementations, dependencies and configuration, usage, outputs, and
+side effects. Read the implementations before writing those explanations.
+The template below is the authoring contract; an inventory alone is not a guide.
+
+On the site, **Website** renders that same folder README with navigation and
+the folder's inventory. **Markdown** shows the exact original README text with
+copy and download controls. The generated inventory is not added to the source
+README. `?view=markdown` shares the source view; browser Back restores the prior
+view. Without JavaScript the rendered guide remains readable.
+
+Folders without a README show their inventory and a documentation-needed notice;
+they do not display a fabricated Markdown explanation. The SSH and Conversion folders are documented examples. Other undocumented
+folders still need source-reviewed guides.
 
 `website/pkb.py` is website build tooling, not an application script. At each
 build it discovers folders, Markdown notes, and these tool extensions:
