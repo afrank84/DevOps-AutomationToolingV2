@@ -1,0 +1,5 @@
+# Local documentation dependencies and build output
+.venv/
+/site/
+__pycache__/
+*.pyc

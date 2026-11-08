@@ -1,0 +1,33 @@
+site_name: DevOps Automation Tooling V2
+site_description: A personal knowledge base for independent automation scripts and solutions.
+site_url: https://devops-automationtoolingv2.pages.dev/
+repo_url: https://github.com/afrank84/DevOps-AutomationToolingV2
+repo_name: afrank84/DevOps-AutomationToolingV2
+docs_dir: website
+site_dir: site
+use_directory_urls: true
+hooks:
+  - website/pkb.py
+theme:
+  name: material
+  font: false
+  palette:
+    scheme: slate
+    primary: blue
+    accent: cyan
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+plugins:
+  - search
+markdown_extensions:
+  - toc:
+      permalink: true
+  - tables
+  - fenced_code
+  - pymdownx.highlight
+  - pymdownx.superfences

@@ -2,6 +2,19 @@
 
 [![Deployed Site](https://img.shields.io/badge/live-site-blue)](https://devops-automationtoolingv2.pages.dev/)
 
+## Personal knowledge base pilot
+
+The searchable PKB builds directly from folder-level READMEs, with automatic
+folder navigation and source inventories. Scripts remain independent and in
+their existing locations. Start with the [SSH key setup guide](SSH/README.md),
+which compares the PowerShell and Bash implementations, or read
+[how to build the website and document another folder](website/README.md).
+
+Only SSH has new tool explanations in this pilot. Other folders retain their
+existing notes and show which scripts still need documentation. The original
+website remains in `index.html` and is preserved at `/catalog.html` in the new
+build. Existing repository overview content follows below.
+
 ## Overview
 
 DevOps Automation Tooling V2 is a **comprehensive collection of automation scripts, utilities, and tools** built to simplify and streamline a wide range of technical tasks.
