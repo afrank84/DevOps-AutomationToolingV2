@@ -1,5 +1,6 @@
 """Build-only discovery: READMEs stay beside scripts; no generated source docs."""
 
+import html
 import json
 import logging
 import os
@@ -12,6 +13,7 @@ from urllib.parse import quote, unquote, urlsplit
 from mkdocs.structure.files import File, Files
 
 LOG = logging.getLogger("mkdocs.pkb")
+FOLDER_READMES = {}
 ROOT = Path(__file__).resolve().parent.parent
 LANGUAGES = {
     ".py": "Python", ".ps1": "PowerShell", ".sh": "Bash",
@@ -90,6 +92,7 @@ def prose_links(text):
 
 
 def on_files(files, config):
+    FOLDER_READMES.clear()
     paths = discover()
     scripts = [p for p in paths if PurePosixPath(p).suffix.lower() in LANGUAGES
                and p not in {"index.html", "mkdocs.yml"}]
@@ -179,12 +182,16 @@ def on_files(files, config):
     def add(uri, content):
         output.append(File.generated(config, uri, content=content))
 
+    for asset in ("folder-views.js", "folder-views.css"):
+        add("assets/" + asset, (ROOT / "website" / asset).read_text(encoding="utf-8"))
+
     def relative(target, destination):
         return posixpath.relpath(target, posixpath.dirname(destination) or ".")
 
     for folder in sorted(folders):
         destination = pages[folder]
         readme = readmes.get(folder)
+        FOLDER_READMES[destination] = (readme, (ROOT / readme).read_text(encoding="utf-8") if readme else None)
         if readme:
             body = rewrite((ROOT / readme).read_text(encoding="utf-8"), readme, destination)
             body += f"\n\n[View this README on GitHub]({source_url(readme)})\n"
@@ -261,3 +268,32 @@ def on_serve(server, config, builder):
         if not entry.is_symlink():
             server.watch(str(entry), builder)
     return server
+
+
+def on_page_content(content, page, config, files):
+    """Offer two states of one folder without changing its canonical README."""
+    if page.file.src_uri not in FOLDER_READMES:
+        return content
+    readme, source = FOLDER_READMES[page.file.src_uri]
+    if source is None:
+        return ('<aside class="folder-notice">This folder needs a README explaining '
+                'what its files do, prerequisites, configuration, usage, outputs, '
+                'and side effects. The inventory below links to the source.</aside>' + content)
+    return (
+        '<div class="folder-views" data-folder-views>'
+        '<nav class="folder-toolbar" aria-label="Folder presentation">'
+        '<span class="folder-label">Folder guide</span>'
+        '<button type="button" data-folder-view="rendered" aria-pressed="true">Website</button>'
+        '<button type="button" data-folder-view="markdown" aria-pressed="false">Markdown</button>'
+        '</nav>'
+        '<section data-folder-panel="rendered" aria-label="Rendered folder guide">' + content + '</section>'
+        '<section data-folder-panel="markdown" aria-label="Original folder README" hidden>'
+        '<p class="folder-source-path">' + html.escape(readme) + '</p>'
+        '<p>The original folder README, exactly as stored in the repository.</p>'
+        '<div class="folder-source-actions">'
+        '<button type="button" data-copy-readme>Copy Markdown</button> '
+        '<button type="button" data-download-readme>Download README</button>'
+        '<span role="status" data-copy-status></span></div>'
+        '<pre class="folder-source"><code>' + html.escape(source) + '</code></pre>'
+        '</section></div>'
+    )

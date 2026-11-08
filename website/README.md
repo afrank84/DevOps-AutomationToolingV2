@@ -2,7 +2,8 @@
 
 The repository remains a collection of independent scripts. Folder READMEs are
 the canonical explanations, and MkDocs builds the website directly from them.
-Only [SSH](../SSH/README.md) has new tool explanations in this pilot. Existing
+[SSH](../SSH/README.md) and [Conversion](../Conversion/README.md) have source-reviewed
+folder guides in this pilot. Existing
 notes and the original catalog are preserved; undocumented folders show source
 inventories instead of invented explanations.
 
@@ -49,6 +50,24 @@ heading links, source links, and a search such as `passphrase` or
 `global Git identity`. Do not run workstation setup scripts to test the PKB.
 
 ## Discovery, navigation, and search
+
+### One guide per folder, two website views
+
+The unit of documentation is a **folder**, not an individual script page.
+Each folder's README should explain what its files actually do, how to choose
+between implementations, dependencies and configuration, usage, outputs, and
+side effects. Read the implementations before writing those explanations.
+The template below is the authoring contract; an inventory alone is not a guide.
+
+On the site, **Website** renders that same folder README with navigation and
+the folder's inventory. **Markdown** shows the exact original README text with
+copy and download controls. The generated inventory is not added to the source
+README. `?view=markdown` shares the source view; browser Back restores the prior
+view. Without JavaScript the rendered guide remains readable.
+
+Folders without a README show their inventory and a documentation-needed notice;
+they do not display a fabricated Markdown explanation. The SSH and Conversion folders are documented examples. Other undocumented
+folders still need source-reviewed guides.
 
 `website/pkb.py` is website build tooling, not an application script. At each
 build it discovers folders, Markdown notes, and these tool extensions:
