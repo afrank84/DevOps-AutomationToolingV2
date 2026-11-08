@@ -4,6 +4,9 @@
 
 ## Browse file explanations
 
+Use the catalog's **Language** dropdown to filter by implementation language.
+Text search also matches language names, and combines with the selected language.
+
 On the [website](https://devops-automationtoolingv2.pages.dev/), clicking a file
 opens an on-site reader rather than downloading the script. **How it works**
 shows its explanation from the owning folder README; **Folder Markdown** shows

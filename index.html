@@ -32,6 +32,12 @@
     .search-bar input{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:.6rem 1rem .6rem 2.8rem;border-radius:10px;font-size:.95rem;width:100%;outline:none;transition:border .15s}
     .search-bar input:focus{border-color:var(--accent)}
     .search-bar svg{position:absolute;left:1rem;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text3)}
+    .search-controls{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+    .search-controls .search-bar-inner{flex:1 1 260px;min-width:0}
+    .language-filter{display:flex;align-items:center;gap:.6rem;color:var(--text2);font-size:.9rem}
+    .language-filter select{font:inherit;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:.6rem;max-width:100%}
+    .language-filter select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .search-results{color:var(--text2);font-size:.8rem;margin-top:.6rem}
 
     /* HERO */
     .hero{max-width:1400px;margin:0 auto;padding:4rem 2rem 3rem;text-align:center}
@@ -63,6 +69,7 @@
     .tool-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem 1rem;transition:all .15s;cursor:pointer;text-decoration:none;color:inherit;display:block}
     .tool-card:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-1px)}
     .tool-card.hidden{display:none}
+    .tool-card{min-width:0}
     .tool-top{display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem}
     .tool-lang{font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:.12rem .45rem;border-radius:4px;flex-shrink:0}
     .lang-powershell{background:rgba(100,100,255,.15);color:#8b8bff}
@@ -116,10 +123,17 @@
 </nav>
 
 <div class="search-bar">
+  <div class="search-controls">
   <div class="search-bar-inner">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <input type="search" id="searchInput" placeholder="Search scripts..." autocomplete="off">
+    <input type="search" id="searchInput" aria-label="Search scripts" placeholder="Search scripts or languages..." autocomplete="off">
   </div>
+  <div class="language-filter">
+    <label for="languageFilter">Language</label>
+    <select id="languageFilter"><option value="">All languages</option></select>
+  </div>
+  </div>
+  <p class="search-results" id="searchResults" role="status" aria-live="polite"></p>
 </div>
 
 <section class="hero">
@@ -404,6 +418,11 @@ const LANG_MAP = {
   yaml:"yaml", go:"go", php:"php", sql:"sql", html:"html",
   groovy:"groovy", javascript:"js", cobol:"cobol"
 };
+const LANG_LABELS = {
+  powershell:"PowerShell", python:"Python", bash:"Bash", perl:"Perl",
+  yaml:"YAML", go:"Go", php:"PHP", sql:"SQL", html:"HTML",
+  groovy:"Groovy", javascript:"JavaScript", cobol:"COBOL"
+};
 
 // Build nav
 const navLinks = document.getElementById("navLinks");
@@ -457,6 +476,7 @@ catNames.forEach(cat => {
     const langLabel = tool.lang.toUpperCase();
     const card = document.createElement("a");
     card.className = "tool-card";
+    card.dataset.language = tool.lang;
     card.href = "guide.html?file=" + encodeURIComponent(tool.path);
     card.innerHTML = `
       <div class="tool-top">
@@ -472,15 +492,25 @@ catNames.forEach(cat => {
 
 // Search
 const searchInput = document.getElementById("searchInput");
+const languageFilter = document.getElementById("languageFilter");
 const noResults = document.getElementById("noResults");
-searchInput.addEventListener("input", () => {
+Object.keys(langCounts).sort((a,b) => (LANG_LABELS[a] || a).localeCompare(LANG_LABELS[b] || b)).forEach(language => {
+  const option = document.createElement("option");
+  option.value = language;
+  option.textContent = `${LANG_LABELS[language] || language} (${langCounts[language]})`;
+  languageFilter.appendChild(option);
+});
+function filterTools() {
   const q = searchInput.value.toLowerCase().trim();
   let totalVisible = 0;
   document.querySelectorAll(".tool-card").forEach(card => {
     const name = card.querySelector(".tool-name").textContent.toLowerCase();
     const desc = card.querySelector(".tool-desc").textContent.toLowerCase();
     const path = card.querySelector(".tool-path").textContent.toLowerCase();
-    const match = !q || name.includes(q) || desc.includes(q) || path.includes(q);
+    const language = card.dataset.language;
+    const matchesSearch = !q || name.includes(q) || desc.includes(q) || path.includes(q)
+      || (LANG_LABELS[language] || language).toLowerCase().includes(q);
+    const match = matchesSearch && (!languageFilter.value || language === languageFilter.value);
     card.classList.toggle("hidden", !match);
     if (match) totalVisible++;
   });
@@ -488,9 +518,14 @@ searchInput.addEventListener("input", () => {
   document.querySelectorAll(".category").forEach(cat => {
     const visible = cat.querySelectorAll(".tool-card:not(.hidden)").length;
     cat.style.display = visible ? "" : "none";
+    cat.querySelector(".cat-count").textContent = visible;
   });
   noResults.classList.toggle("show", totalVisible === 0);
-});
+  document.getElementById("searchResults").textContent = `${totalVisible} of ${totalScripts} scripts${languageFilter.value ? ' · ' + LANG_LABELS[languageFilter.value] : ''}`;
+}
+searchInput.addEventListener("input", filterTools);
+languageFilter.addEventListener("change", filterTools);
+filterTools();
 
 // Active nav link on scroll
 const observer = new IntersectionObserver(entries => {
