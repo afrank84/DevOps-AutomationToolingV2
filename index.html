@@ -457,7 +457,7 @@ catNames.forEach(cat => {
     const langLabel = tool.lang.toUpperCase();
     const card = document.createElement("a");
     card.className = "tool-card";
-    card.href = tool.path;
+    card.href = "guide.html?file=" + encodeURIComponent(tool.path);
     card.innerHTML = `
       <div class="tool-top">
         <span class="tool-lang ${langClass}">${langLabel}</span>

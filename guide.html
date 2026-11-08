@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>File guide · DevOps Automation Tooling</title>
+  <link rel="stylesheet" href="assets/guide.css">
+  <script defer src="assets/vendor/marked.js"></script>
+  <script defer src="assets/vendor/purify.js"></script>
+  <script defer src="assets/guide.js"></script>
+</head>
+<body>
+  <header><a href="./">← All tools</a><span>DevOps Automation Tooling</span></header>
+  <main>
+    <p id="breadcrumb"></p>
+    <h1 id="file-title">File guide</h1>
+    <p id="status" role="status">Loading folder documentation…</p>
+    <nav id="views" aria-label="Presentation" hidden>
+      <button type="button" data-view="guide" aria-pressed="true">How it works</button>
+      <button type="button" data-view="markdown" aria-pressed="false">Folder Markdown</button>
+      <button type="button" data-view="source" aria-pressed="false">Source code</button>
+    </nav>
+    <section id="guide" aria-label="How it works"></section>
+    <section id="markdown" aria-label="Original folder Markdown" hidden>
+      <p>The canonical folder README, as stored in the repository.</p>
+      <pre><code id="markdown-text"></code></pre>
+    </section>
+    <section id="source" aria-label="Selected file source" hidden>
+      <p>Source is displayed as text. Opening this view does not execute the file.</p>
+      <pre><code id="source-text"></code></pre>
+    </section>
+    <aside id="related" hidden><h2>Other files in this folder</h2><ul id="folder-files"></ul></aside>
+    <footer id="source-links" hidden>
+      <a id="github-link">View file on GitHub</a>
+      <a id="readme-link">View folder README on GitHub</a>
+      <a id="interactive-link" hidden>Open interactive tool</a>
+      <a id="download-link" download>Download source</a>
+    </footer>
+    <noscript>This guide needs JavaScript to render the folder README. <a href="https://github.com/afrank84/DevOps-AutomationToolingV2">Read the documentation on GitHub</a>.</noscript>
+  </main>
+</body>
+</html>

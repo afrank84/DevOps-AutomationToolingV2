@@ -1,0 +1,480 @@
+{
+  "Action5Pro": {
+    "readme": "Action5Pro/README.md",
+    "files": [
+      "Action5Pro/Delete-All-Files-But-Mp4.pl",
+      "Action5Pro/Organize-AllVideosByMonth.sh"
+    ]
+  },
+  "Airtable": {
+    "readme": "Airtable/README.md",
+    "files": [
+      "Airtable/Download-DatabaseWithPat.py"
+    ]
+  },
+  "AmbernicRG35XXSP": {
+    "readme": "AmbernicRG35XXSP/README.md",
+    "files": [
+      "AmbernicRG35XXSP/RemoveGamesForKids.pl"
+    ]
+  },
+  "Artifactory": {
+    "readme": "Artifactory/README.md",
+    "files": [
+      "Artifactory/List-FilesAndSizeInFolder.ps1",
+      "Artifactory/Upload-FilesRecusiveWithFolderStructure.py",
+      "Artifactory/Upload-SingleFileToArtifactory.py"
+    ]
+  },
+  "Atlassian": {
+    "readme": null,
+    "files": [
+      "Atlassian/Get-AllIssuesAssignedToMeInOneYearPPM.pl",
+      "Atlassian/Jira-APIv2v3FormCalls.html",
+      "Atlassian/Jira-GetActiveSprints.ps1",
+      "Atlassian/Read-MdFileOutputAndCleanUpToPrettyTable.ps1"
+    ]
+  },
+  "Atlassian/Attachments": {
+    "readme": "Atlassian/Attachments/ReadMe.md",
+    "files": [
+      "Atlassian/Attachments/Download-Attachments.py",
+      "Atlassian/Attachments/List-Attachments.ps1",
+      "Atlassian/Attachments/List-Attachments.py"
+    ]
+  },
+  "Atlassian/Backups": {
+    "readme": "Atlassian/Backups/ReadMe.md",
+    "files": [
+      "Atlassian/Backups/Confluence-backup.sh",
+      "Atlassian/Backups/Jira-backup.sh",
+      "Atlassian/Backups/PressCreateBackupButton.ps1",
+      "Atlassian/Backups/backup-confluence-api-token.ps1",
+      "Atlassian/Backups/backup-jira-api-token.ps1",
+      "Atlassian/Backups/confluence_backup.py",
+      "Atlassian/Backups/jira_backup.py"
+    ]
+  },
+  "Atlassian/Comments": {
+    "readme": null,
+    "files": [
+      "Atlassian/Comments/Get-ProjectKeysInComments.py",
+      "Atlassian/Comments/Replace-LinksInComments.ps1"
+    ]
+  },
+  "Atlassian/Confluence": {
+    "readme": null,
+    "files": [
+      "Atlassian/Confluence/confluence_backup_gui.py"
+    ]
+  },
+  "Atlassian/Filters": {
+    "readme": null,
+    "files": [
+      "Atlassian/Filters/Get-JiraFiltersAndJql.ps1",
+      "Atlassian/Filters/Upload-FiltersById.ps1"
+    ]
+  },
+  "Atlassian/Issues": {
+    "readme": null,
+    "files": [
+      "Atlassian/Issues/Get-IssueAsMdFile.py",
+      "Atlassian/Issues/Jira-AddSubtaskByParentIssueName.ps1",
+      "Atlassian/Issues/Jira-AssignIssuesInProjectKcByName.ps1",
+      "Atlassian/Issues/Jira-CreateDailyChoreListProjectKcAurora.ps1",
+      "Atlassian/Issues/Jira-CreateDailyChoreListProjectKcRaynor.ps1",
+      "Atlassian/Issues/Jira-DeleteIssuesStatusDoneInProjectKc.ps1",
+      "Atlassian/Issues/Jira-DeleteIssuesStatusDoneInProjectKc.sh",
+      "Atlassian/Issues/Jira-DeleteSingleIssue.ps1",
+      "Atlassian/Issues/Jira-GetAllProjectKcIssues.ps1",
+      "Atlassian/Issues/Jira-GetDailyIssuesInProjectKc.ps1",
+      "Atlassian/Issues/Jira-GrabDailyChoreFromCSV.ps1"
+    ]
+  },
+  "Atlassian/Security": {
+    "readme": null,
+    "files": [
+      "Atlassian/Security/ScanForDefectsChangedAfterClose.py"
+    ]
+  },
+  "AzureDevOps": {
+    "readme": null,
+    "files": [
+      "AzureDevOps/Azure-to-GitHub-Commit-History-Validation-Local.py",
+      "AzureDevOps/Get-ADOBuildsByMonth.pl"
+    ]
+  },
+  "Browsers": {
+    "readme": "Browsers/README.md",
+    "files": [
+      "Browsers/Brave-RemoveLockFile.sh",
+      "Browsers/Get-BookMarks.py"
+    ]
+  },
+  "Conversion": {
+    "readme": "Conversion/README.md",
+    "files": [
+      "Conversion/Convert-CsvToJson.py",
+      "Conversion/Get-AllContentHtmlToMd.ps1"
+    ]
+  },
+  "Data": {
+    "readme": null,
+    "files": [
+      "Data/credentialsExample.txt",
+      "Data/event_journal.txt",
+      "Data/jiraTicketExample.txt"
+    ]
+  },
+  "Database": {
+    "readme": "Database/README.md",
+    "files": [
+      "Database/Create-PlantABase.php",
+      "Database/Download-BackupOfMySqlDatabase.ps1",
+      "Database/Get-InformationSchema.sql",
+      "Database/Get-MySqlDataStructure.go",
+      "Database/Get-MySqlTableDataStructure.php",
+      "Database/InMotionHostingMySQLBackup.sh",
+      "Database/Read-JsonFileCreateSqlCommandsForPlantTable.py"
+    ]
+  },
+  "Email": {
+    "readme": "Email/README.md",
+    "files": [
+      "Email/Delete-EmailGt7DaysFromSender.py",
+      "Email/Print-SubjectLineOfUnreadEmail.py"
+    ]
+  },
+  "Encryption": {
+    "readme": null,
+    "files": [
+      "Encryption/DeterministicKeyGen.py",
+      "Encryption/Get-Base64ToASCII.js",
+      "Encryption/Get-Base64ToASCII.ps1",
+      "Encryption/KeyGenerator.py",
+      "Encryption/PasswordManager.html",
+      "Encryption/PasswordMangerEncryptorCompanion.html",
+      "Encryption/Remove-PermissionFromPdfGui.py"
+    ]
+  },
+  "Excel": {
+    "readme": "Excel/README.md",
+    "files": [
+      "Excel/Remove-EmptyColumns.ps1"
+    ]
+  },
+  "Forgejo": {
+    "readme": "Forgejo/README.md",
+    "files": [
+      "Forgejo/get-forgejo-runner-installed.sh"
+    ]
+  },
+  "Forms": {
+    "readme": null,
+    "files": [
+      "Forms/7300_Squares.html",
+      "Forms/CreateGitHubIssue.html",
+      "Forms/Equipment-ReturnOnInvestmentByJob.html",
+      "Forms/Soccer-Roster.html",
+      "Forms/StumpGrinder-Pricing.html"
+    ]
+  },
+  "General": {
+    "readme": "General/README.md",
+    "files": [
+      "General/Backup-ImagesFromAndroidPhone.ps1",
+      "General/Copy-AllImagesToNewFolder.py",
+      "General/Find-DuplicateFiles.sh",
+      "General/Get-DiskSpaceOfPhysicalOrVirtualMachine.ps1",
+      "General/Get-WindowsKey.ps1",
+      "General/KidsCountDownTimer.py",
+      "General/List-OfProgramsInstalled.ps1",
+      "General/List-WindowsUpdates.ps1",
+      "General/Remove-FilesBackupsByFibonacci.ps1",
+      "General/RoboCopy-TransferHost2Host.ps1",
+      "General/Search-KeywordOccurence.cob",
+      "General/organize.sh",
+      "General/timer.html",
+      "General/timer_gui.py"
+    ]
+  },
+  "Gitea": {
+    "readme": "Gitea/README.md",
+    "files": [
+      "Gitea/GitHub2GiteaMirrorRepos.sh"
+    ]
+  },
+  "Github": {
+    "readme": "Github/README.md",
+    "files": [
+      "Github/Get-AllReposPrivateAndPublic.pl",
+      "Github/Get-Commits.php",
+      "Github/Get-CsprojCommitsVsAllCommitsInGithubCli1Year.pl",
+      "Github/Get-GitHubUserInformationViaApi.ps1",
+      "Github/Get-ListOfPublicRepositoriesByUsername.ps1",
+      "Github/Get-MarkdownFileAndDisplayFromGithub.html",
+      "Github/Get-MdChangesLocally.ps1",
+      "Github/Get-RunnerGroups.sh",
+      "Github/HighCommitCount.html",
+      "Github/List-IssuesOnSite.php",
+      "Github/Synology-DownloadAllReposInAccount.sh",
+      "Github/Test-IfGitHubActionRunnerServiceIsRunningOnWindowsAgent.ps1",
+      "Github/Update-GithubTxtFileInRepoWithJavaScript.html",
+      "Github/changeMyDataWithApiFromJsScript.txt"
+    ]
+  },
+  "Github/Github_CLI": {
+    "readme": "Github/Github_CLI/README.md",
+    "files": [
+      "Github/Github_CLI/Get-team_secret_rotation_view.sh"
+    ]
+  },
+  "Habit_Trackers": {
+    "readme": null,
+    "files": [
+      "Habit_Trackers/habit.html",
+      "Habit_Trackers/habit_gui.pl"
+    ]
+  },
+  "Iac": {
+    "readme": null,
+    "files": [
+      "Iac/0-instructions-preflight.ps1",
+      "Iac/1-bootstrap-wsl-docker.ps1",
+      "Iac/2-postreboot-docker-verify.ps1"
+    ]
+  },
+  "Input_Manipulation": {
+    "readme": null,
+    "files": [
+      "Input_Manipulation/Pressed-KeyDetector.ps1",
+      "Input_Manipulation/infowars.sh",
+      "Input_Manipulation/kvm_typer.ps1",
+      "Input_Manipulation/kvm_typer.py"
+    ]
+  },
+  "Install": {
+    "readme": "Install/README.md",
+    "files": [
+      "Install/Docker-Install.sh",
+      "Install/Install-SetupEnviormentForCobolOnLinux.sh",
+      "Install/InstallCustomFonts.sh",
+      "Install/Python3-Install.ps1",
+      "Install/VisualStudio2019-DownloadWithOutEmail.ps1",
+      "Install/VisualStudioCode-Install.sh",
+      "Install/WindowsAgentHardening.ps1"
+    ]
+  },
+  "Journal": {
+    "readme": "Journal/README.md",
+    "files": [
+      "Journal/Write-EventToTextFile.ps1"
+    ]
+  },
+  "Linux": {
+    "readme": "Linux/README.md",
+    "files": [
+      "Linux/Get-EnviormentVariablesInList.sh"
+    ]
+  },
+  "Linux/PopOS": {
+    "readme": "Linux/PopOS/README.md",
+    "files": [
+      "Linux/PopOS/BeeBeepInstall.sh",
+      "Linux/PopOS/ChangeDockColor.sh",
+      "Linux/PopOS/New-PcSetup.pl"
+    ]
+  },
+  "MetaData": {
+    "readme": null,
+    "files": [
+      "MetaData/Get-Mp3MetaInfo.ps1"
+    ]
+  },
+  "Minecraft": {
+    "readme": null,
+    "files": [
+      "Minecraft/Create-MInecraftBackup.ps1",
+      "Minecraft/Get-ExtractMinecraftTextures.ps1",
+      "Minecraft/Get-InfoFromServerIp.py",
+      "Minecraft/PackResourceGuiDashboard.py",
+      "Minecraft/mc_faces_server.py",
+      "Minecraft/minecraft-vanilla-server.yml"
+    ]
+  },
+  "Networking": {
+    "readme": "Networking/README.md",
+    "files": [
+      "Networking/Get-LinuxWifPasswordHistory.sh",
+      "Networking/Get-ListOfAllBluetoothDevicesConnected.ps1",
+      "Networking/List-ComputersOnSameNetwork.ps1",
+      "Networking/Monitor-NetworkCardEnableIfDisabled.ps1",
+      "Networking/Ping-IpAndPortChangingOnlyLast.ps1"
+    ]
+  },
+  "Outlook": {
+    "readme": "Outlook/README.md",
+    "files": [
+      "Outlook/Convert-MsgToMd.ps1"
+    ]
+  },
+  "Pcloud": {
+    "readme": "Pcloud/README.md",
+    "files": [
+      "Pcloud/Upload-SingleFile.py"
+    ]
+  },
+  "Philips_Hue_Lights": {
+    "readme": "Philips_Hue_Lights/README.md",
+    "files": [
+      "Philips_Hue_Lights/ConnectToBridgeAndTest.py",
+      "Philips_Hue_Lights/ConnectToBridgeAndTest_GUI.py"
+    ]
+  },
+  "Podcast": {
+    "readme": "Podcast/README.md",
+    "files": [
+      "Podcast/tbc_podman.sh"
+    ]
+  },
+  "Portainer": {
+    "readme": "Portainer/README.md",
+    "files": [
+      "Portainer/pihole.yml",
+      "Portainer/redmine.yml"
+    ]
+  },
+  "RSS": {
+    "readme": "RSS/README.md",
+    "files": [
+      "RSS/BBC-NewsFeed.ps1"
+    ]
+  },
+  "Redmine": {
+    "readme": "Redmine/README.md",
+    "files": [
+      "Redmine/JiraCsv2RedmineCsv.py"
+    ]
+  },
+  "SSH": {
+    "readme": "SSH/README.md",
+    "files": [
+      "SSH/Get-SshKey.ps1",
+      "SSH/Get-SshKeyLinux.sh"
+    ]
+  },
+  "Scrappers": {
+    "readme": "Scrappers/README.md",
+    "files": [
+      "Scrappers/Get-IcoFromWebsite.ps1",
+      "Scrappers/PutnamCounty.ps1"
+    ]
+  },
+  "ScriptRunner": {
+    "readme": null,
+    "files": [
+      "ScriptRunner/Get-FiltersWithNameEmailCountIdAndJql.groovy",
+      "ScriptRunner/Get-PublicFiltersAndDashboards.groovy",
+      "ScriptRunner/Get-SingleUserFiltersSimplified.groovy",
+      "ScriptRunner/Get-UserDetailsDataCenter.groovy",
+      "ScriptRunner/PPM-Get-WorkCompletedOrUpdated.groovy"
+    ]
+  },
+  "Security": {
+    "readme": "Security/Readme.md",
+    "files": [
+      "Security/CVE-2020-1472.ps1",
+      "Security/Collect-RansomwareLogs.ps1",
+      "Security/GUI-Get-FileNameTypeSize.ps1",
+      "Security/GUI-GetFileNameTypeSize.py",
+      "Security/Get-ActiveDirectoryUserLoginLogs.ps1",
+      "Security/Get-EverySHA.pl",
+      "Security/Get-NameTypeSizeOfFile.pl",
+      "Security/Get-NameTypeSizeOfFileSaveToUsb.ps1",
+      "Security/Get-Sha.ps1",
+      "Security/Get-WindowsUpdatesList.ps1",
+      "Security/Get-WindowsVersion.ps1",
+      "Security/Scan-For_0e0899.ps1",
+      "Security/Search-ForSpecifcFiles.sh",
+      "Security/Windows-IR-Toolkit.ps1",
+      "Security/Windows_QuickAndDirty.ps1",
+      "Security/install_malware_tools.sh",
+      "Security/search_files_gui.py"
+    ]
+  },
+  "SnapDownloader": {
+    "readme": "SnapDownloader/README.md",
+    "files": [
+      "SnapDownloader/Move-Mp3Files.ps1"
+    ]
+  },
+  "Steam": {
+    "readme": "Steam/README.md",
+    "files": [
+      "Steam/Get-DiscountsOnCoopGames.pl"
+    ]
+  },
+  "Steam/ARMA_CWA": {
+    "readme": "Steam/ARMA_CWA/README.md",
+    "files": [
+      "Steam/ARMA_CWA/Remove-Addons.ps1"
+    ]
+  },
+  "Stocks": {
+    "readme": null,
+    "files": [
+      "Stocks/3M-CLI.py",
+      "Stocks/3M-GUI-CSV.py",
+      "Stocks/3M-Strategy-CSV-Breakup.html",
+      "Stocks/3M-Strategy-Stock-Picker.html",
+      "Stocks/3M-Strategy-Yahoo.html",
+      "Stocks/3m-No-Gui.py",
+      "Stocks/MA20-50-200-Stratagy.py",
+      "Stocks/MA20-50-200-Strategy.html",
+      "Stocks/chart.js",
+      "Stocks/dataProcessing.js",
+      "Stocks/eventHandlers.js",
+      "Stocks/uiUpdates.js"
+    ]
+  },
+  "Torrents": {
+    "readme": "Torrents/README.md",
+    "files": [
+      "Torrents/PiDownloadTorrents.pl"
+    ]
+  },
+  "WaveFunctionCollapse": {
+    "readme": null,
+    "files": [
+      "WaveFunctionCollapse/GameSinglePathWfc.html",
+      "WaveFunctionCollapse/MultipalePathWfc.html",
+      "WaveFunctionCollapse/SinglePathWfc.html"
+    ]
+  },
+  "YAML": {
+    "readme": null,
+    "files": [
+      "YAML/GH_Action_Debug_CI.yml",
+      "YAML/GH_Action_Global_Failure_Debug_Job.yml",
+      "YAML/GH_Capture_CI_Telemetry.yml",
+      "YAML/JIRA-Done-Issues-Deleted-Weekly.yml",
+      "YAML/Manual-PlaywrightTest.yml"
+    ]
+  },
+  "YouTube": {
+    "readme": "YouTube/README.md",
+    "files": [
+      "YouTube/GUI-Get-Mp3AudioFileFromYouTubeUrl.py",
+      "YouTube/Get-Mp3AudioFileFromYouTubeUrl.py",
+      "YouTube/add-logo.sh",
+      "YouTube/download-thumbnails.sh"
+    ]
+  },
+  "freesound_org": {
+    "readme": null,
+    "files": [
+      "freesound_org/GetCreditsForSoundFiles.pl",
+      "freesound_org/SinglePageGetCreditsForSoundFileGUI.html"
+    ]
+  }
+}

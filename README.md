@@ -2,7 +2,20 @@
 
 [![Deployed Site](https://img.shields.io/badge/live-site-blue)](https://devops-automationtoolingv2.pages.dev/)
 
-## Personal knowledge base pilot
+## Browse file explanations
+
+On the [website](https://devops-automationtoolingv2.pages.dev/), clicking a file
+opens an on-site reader rather than downloading the script. **How it works**
+shows its explanation from the owning folder README; **Folder Markdown** shows
+the original README; **Source code** lets you inspect the file without executing
+it. Source/download links and explicit launches for HTML tools remain secondary.
+
+Folder READMEs hold the maintained explanations: behavior, requirements,
+configuration, usage, outputs, and side effects. When an explanation is missing,
+the reader identifies the gap and shows the file's own comments, imports, and
+entry points as a source outline. An outline is not a reviewed usage guide.
+
+## Personal knowledge base build
 
 The searchable PKB builds directly from folder-level READMEs, with automatic
 folder navigation and source inventories. Scripts remain independent and in
@@ -10,10 +23,11 @@ their existing locations. Start with the [SSH key setup guide](SSH/README.md),
 which compares the PowerShell and Bash implementations, or read
 [how to build the website and document another folder](website/README.md).
 
-Only SSH has new tool explanations in this pilot. Other folders retain their
-existing notes and show which scripts still need documentation. The original
-website remains in `index.html` and is preserved at `/catalog.html` in the new
-build. Existing repository overview content follows below.
+Source-reviewed folder guides now cover SSH, Conversion, GitHub, filesystem,
+network, database, installation, and several service utilities. Other folders
+retain their existing notes and show where authored guides are still needed.
+The static catalog in `index.html` and the optional MkDocs build both use the
+same file reader and folder READMEs. Existing repository overview follows below.
 
 ## Overview
 

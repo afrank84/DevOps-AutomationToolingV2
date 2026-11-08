@@ -6,6 +6,7 @@ import logging
 import os
 import posixpath
 import re
+import shutil
 from collections import defaultdict
 from pathlib import Path, PurePosixPath
 from urllib.parse import quote, unquote, urlsplit
@@ -21,7 +22,7 @@ LANGUAGES = {
     ".go": "Go", ".php": "PHP", ".sql": "SQL", ".groovy": "Groovy",
     ".cob": "COBOL", ".yml": "YAML", ".yaml": "YAML",
 }
-SKIP_DIRS = {"website", "site", "node_modules", "__pycache__", "venv"}
+SKIP_DIRS = {"website", "site", "assets", "node_modules", "__pycache__", "venv"}
 # Normal inline Markdown links are also the documentation coverage convention.
 LINK = re.compile(r'(?<!!)\[((?:[^\[\]\n]|\[[^\]\n]*\])+)\]\(([^\s)]+)(\s+"[^"]*")?\)')
 
@@ -95,7 +96,7 @@ def on_files(files, config):
     FOLDER_READMES.clear()
     paths = discover()
     scripts = [p for p in paths if PurePosixPath(p).suffix.lower() in LANGUAGES
-               and p not in {"index.html", "mkdocs.yml"}]
+               and p not in {"index.html", "guide.html", "mkdocs.yml"}]
     markdown = [p for p in paths if p.lower().endswith(".md")]
     # The build guide is itself a single canonical folder README.
     markdown.append("website/README.md")
@@ -182,6 +183,8 @@ def on_files(files, config):
     def add(uri, content):
         output.append(File.generated(config, uri, content=content))
 
+    add("guide.html", (ROOT / "guide.html").read_text(encoding="utf-8"))
+
     for asset in ("folder-views.js", "folder-views.css"):
         add("assets/" + asset, (ROOT / "website" / asset).read_text(encoding="utf-8"))
 
@@ -213,7 +216,8 @@ def on_files(files, config):
                 name = PurePosixPath(path).name
                 status = "Linked in folder README" if path in covered else "Missing folder documentation"
                 body += f"### {name}\n\n{LANGUAGES[PurePosixPath(path).suffix.lower()]} · {status}\n\n"
-                body += f"[View source on GitHub]({source_url(path)})"
+                reader = relative("guide.html", destination) + "?file=" + quote(path, safe="")
+                body += f"[Read how this file works]({reader}) · [View source on GitHub]({source_url(path)})"
                 if path.endswith(".html"):
                     body += f" · [Open interactive tool]({relative(path, destination)})"
                 body += "\n\n"
@@ -268,6 +272,24 @@ def on_serve(server, config, builder):
         if not entry.is_symlink():
             server.watch(str(entry), builder)
     return server
+
+
+def on_post_build(config):
+    """The same reader works on the existing static host and MkDocs builds."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("folder_index", ROOT / "website/build_folder_index.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    index = module.folder_index()
+    target = Path(config.site_dir)
+    shutil.copytree(ROOT / "assets", target / "assets", dirs_exist_ok=True)
+    shutil.copy2(ROOT / "guide.html", target / "guide.html")
+    (target / "assets/folders.json").write_text(json.dumps(index, indent=2) + "\n", encoding="utf-8")
+    for entry in index.values():
+        for source in entry["files"] + ([entry["readme"]] if entry["readme"] else []):
+            dest = target / source
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / source, dest)
 
 
 def on_page_content(content, page, config, files):
