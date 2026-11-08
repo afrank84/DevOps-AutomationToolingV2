@@ -17,10 +17,20 @@
     <p id="status" role="status">Loading folder documentation…</p>
     <nav id="views" aria-label="Presentation" hidden>
       <button type="button" data-view="guide" aria-pressed="true">How it works</button>
+      <button type="button" data-view="preview" aria-pressed="false" hidden>HTML Preview</button>
       <button type="button" data-view="markdown" aria-pressed="false">Folder Markdown</button>
       <button type="button" data-view="source" aria-pressed="false">Source code</button>
     </nav>
     <section id="guide" aria-label="How it works"></section>
+    <section id="preview" aria-label="HTML preview" hidden>
+      <div class="preview-toolbar">
+        <span>Interactive preview</span>
+        <button type="button" id="reload-preview">Reload</button>
+        <button type="button" id="fullscreen-preview">Fullscreen</button>
+      </div>
+      <p class="preview-note">Runs in an isolated frame. Tools that need browser storage or external APIs may work differently; use Open interactive tool for the standalone version.</p>
+      <iframe id="preview-frame" title="HTML file preview" sandbox="allow-scripts allow-forms allow-downloads allow-modals" allowfullscreen></iframe>
+    </section>
     <section id="markdown" aria-label="Original folder Markdown" hidden>
       <p>The canonical folder README, as stored in the repository.</p>
       <pre><code id="markdown-text"></code></pre>

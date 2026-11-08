@@ -8,7 +8,9 @@ On the [website](https://devops-automationtoolingv2.pages.dev/), clicking a file
 opens an on-site reader rather than downloading the script. **How it works**
 shows its explanation from the owning folder README; **Folder Markdown** shows
 the original README; **Source code** lets you inspect the file without executing
-it. Source/download links and explicit launches for HTML tools remain secondary.
+it. HTML files also have an **HTML Preview** tab for an interactive, isolated view
+inside the reader, with reload and fullscreen controls. Source/download links
+and standalone launches remain available.
 
 Folder READMEs hold the maintained explanations: behavior, requirements,
 configuration, usage, outputs, and side effects. When an explanation is missing,

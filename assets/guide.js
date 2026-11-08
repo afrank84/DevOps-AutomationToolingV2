@@ -1,4 +1,4 @@
-/* Folder READMEs are the only maintained explanations; source is never executed. */
+/* Folder READMEs supply explanations; HTML runs only in the explicit sandboxed preview. */
 (() => {
   const params = new URL(location.href).searchParams;
   const file = params.get('file');
@@ -8,6 +8,7 @@
   let selectedView = 'guide';
   let sourcePromise;
   let walkthrough;
+  let canPreview = false;
   async function text(path) {
     const response = await fetch(encoded(path));
     if (!response.ok) throw new Error(`Could not load ${path} (${response.status}).`);
@@ -51,11 +52,19 @@
   }
   function renderState() {
     selectedView = new URL(location.href).searchParams.get('view') || 'guide';
-    if (!['guide', 'markdown', 'source'].includes(selectedView)) selectedView = 'guide';
+    if (!['guide', 'markdown', 'source', 'preview'].includes(selectedView)
+        || (selectedView === 'preview' && !canPreview)) selectedView = 'guide';
     for (const button of document.querySelectorAll('[data-view]')) {
       button.setAttribute('aria-pressed', String(button.dataset.view === selectedView));
     }
-    for (const id of ['guide', 'markdown', 'source']) $(id).hidden = id !== selectedView;
+    for (const id of ['guide', 'markdown', 'source', 'preview']) $(id).hidden = id !== selectedView;
+    const frame = $('preview-frame');
+    if (selectedView === 'preview') {
+      if (!frame.hasAttribute('src')) frame.src = encoded(file);
+    } else if (frame.hasAttribute('src')) {
+      // Stop scripts/timers/network activity when leaving the preview.
+      frame.removeAttribute('src');
+    }
     if (selectedView === 'source' && !sourcePromise) {
       $('source-text').textContent = 'Loading source…';
       sourcePromise = text(file).then(value => { $('source-text').textContent = value; })
@@ -173,11 +182,24 @@
     }
     $('github-link').href = repo + encoded(file);
     $('download-link').href = encoded(file);
-    if (file.endsWith('.html')) {
+    canPreview = /\.html?$/i.test(file);
+    if (canPreview) {
+      document.querySelector('[data-view="preview"]').hidden = false;
+      $('preview-frame').title = `Preview of ${file.split('/').pop()}`;
       $('interactive-link').href = encoded(file);
       $('interactive-link').hidden = false;
     }
     $('views').hidden = false;
+    $('reload-preview').addEventListener('click', () => {
+      $('preview-frame').src = encoded(file);
+    });
+    $('fullscreen-preview').addEventListener('click', async () => {
+      try {
+        await $('preview-frame').requestFullscreen();
+      } catch {
+        $('status').textContent = 'Fullscreen is unavailable in this browser. Use Open interactive tool for a separate page.';
+      }
+    });
     $('related').hidden = false;
     $('source-links').hidden = false;
     $('status').textContent = readme ? 'Folder guide · Read the explanation, then inspect the source when needed.' : 'Folder documentation is incomplete.';

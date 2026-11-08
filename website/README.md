@@ -7,7 +7,12 @@ The current live root is `index.html`. Its cards now open
 on ordinary static hosting immediately after these files deploy; no Cloudflare
 build-setting migration is needed. It renders the owning folder README, selects
 the matching file section when available, and offers Markdown/source views.
-HTML applications launch only through an explicit secondary link.
+HTML files have an explicit **HTML Preview** tab with reload and fullscreen
+controls. The iframe loads only when selected and unloads when leaving the tab.
+Its sandbox permits scripts, forms, downloads, and dialogs without granting
+same-origin access to the reader, its storage, or its document. Relative assets
+resolve at the original file path. Features needing browser storage or a normal
+origin may need the secondary standalone launch link.
 
 After adding files or folder READMEs, refresh the static discovery index:
 

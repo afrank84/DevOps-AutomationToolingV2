@@ -47,6 +47,17 @@ const assert = require('node:assert/strict');
     await page.locator('#views:not([hidden])').waitFor();
     assert(await page.getByRole('link', { name: 'Open interactive tool' }).isVisible());
     assert.equal(await page.locator('#display').count(), 0, 'HTML tool must not execute in the reader');
+    assert.equal(await page.locator('#preview-frame').getAttribute('src'), null, 'Preview must be opt-in');
+    await page.getByRole('button', { name: 'HTML Preview', exact: true }).click();
+    const preview = page.frameLocator('#preview-frame');
+    await preview.locator('#display').waitFor();
+    await preview.getByRole('button', { name: 'Start', exact: true }).click();
+    assert(await preview.getByRole('button', { name: 'Pause', exact: true }).isVisible());
+    assert.equal(await preview.locator('body').evaluate(() => {
+      try { return !!parent.document.body; } catch { return false; }
+    }), false, 'Preview must not access the reader document');
+    await page.getByRole('button', { name: 'Source code', exact: true }).click();
+    assert.equal(await page.locator('#preview-frame').getAttribute('src'), null, 'Leaving preview must stop it');
     await page.goto(base + '/guide.html?file=SSH%2FGet-SshKey.ps1');
     await page.locator('#views:not([hidden])').waitFor();
     await page.getByText('Read the complete folder guide', { exact: true }).click();
