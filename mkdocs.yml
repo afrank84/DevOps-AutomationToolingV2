@@ -31,3 +31,8 @@ markdown_extensions:
   - fenced_code
   - pymdownx.highlight
   - pymdownx.superfences
+
+extra_javascript:
+  - assets/folder-views.js
+extra_css:
+  - assets/folder-views.css
